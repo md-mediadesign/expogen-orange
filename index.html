@@ -206,6 +206,7 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
 
 /* ── Nav ── */
 .nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:2.2rem;padding-top:1.8rem;border-top:1px solid var(--border)}
+.nav-center{display:flex;align-items:center;gap:.5rem}
 .btn{padding:.8rem 1.8rem;border-radius:8px;font-family:'Carlito',sans-serif;font-size:.85rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .25s;border:none}
 .btn-back{background:transparent;border:1px solid rgba(244,159,37,.25);color:var(--muted)}
 .btn-back:hover{border-color:var(--gold);color:var(--gold)}
@@ -213,6 +214,9 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
 .btn-next:hover{background:var(--gold2);box-shadow:0 6px 28px rgba(244,159,37,.4);transform:translateY(-1px)}
 .btn-step-reset{background:transparent;border:none;color:var(--muted);font-family:'Carlito',sans-serif;font-size:.75rem;padding:.4rem .8rem;cursor:pointer;transition:color .2s;display:flex;align-items:center;gap:.35rem;border-radius:6px;border:1px solid transparent}
 .btn-step-reset:hover{color:#e05555;border-color:rgba(224,85,85,.2);background:rgba(224,85,85,.05)}
+.btn-save{background:transparent;border:1px solid rgba(244,159,37,.35);border-radius:6px;color:var(--gold);font-family:'Carlito',sans-serif;font-size:.75rem;font-weight:600;padding:.4rem .9rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.35rem}
+.btn-save:hover{background:rgba(244,159,37,.1);border-color:var(--gold)}
+.btn-save.saved{border-color:rgba(80,200,120,.5);color:rgba(80,200,120,.9);background:rgba(80,200,120,.08)}
 
 /* ── Template Toggle ── */
 .tmpl-toggle{display:flex;gap:.7rem;margin-bottom:1.5rem;flex-wrap:wrap}
@@ -372,6 +376,7 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
   .stepper-col,
   .nav-row,
   .btn-step-reset,
+  .btn-save,
   .btn-header-reset,
   .confirm-overlay,
   .ai-modal-overlay,
@@ -1076,7 +1081,10 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
     <!-- Nav -->
     <div class="nav-row">
       <button class="btn btn-back" id="btnBack" onclick="goBack()">← Zurück</button>
-      <button class="btn-step-reset" id="btnStepReset" onclick="openConfirmStep()">↺ Seite leeren</button>
+      <div class="nav-center">
+        <button class="btn-step-reset" id="btnStepReset" onclick="openConfirmStep()">↺ Seite leeren</button>
+        <button class="btn-save" id="btnSave" onclick="manualSave()">✓ Speichern</button>
+      </div>
       <button class="btn btn-next" id="btnNext" onclick="goNext()">Weiter →</button>
     </div>
 
@@ -1510,13 +1518,16 @@ function updateNav() {
   document.getElementById('btnBack').style.visibility = idx === 0 ? 'hidden' : 'visible';
   const btn = document.getElementById('btnNext');
   const sr = document.getElementById('btnStepReset');
+  const sv = document.getElementById('btnSave');
   if (current === 16) {
     btn.style.display = 'none';
     if (sr) sr.style.display = 'none';
+    if (sv) sv.style.display = 'none';
   } else {
     btn.style.display = '';
     btn.textContent = (idx === active.length - 2) ? 'Vorschau →' : 'Weiter →';
     if (sr) sr.style.display = '';
+    if (sv) sv.style.display = '';
   }
 }
 
@@ -1969,6 +1980,16 @@ function openConfirmStep() {
   if (current===15) return;
   const label = ALL_STEP_DEFS.find(s=>s.id===current)?.label || `Schritt ${current}`;
   openConfirm('↺',`„${label}" leeren?`,`Nur die Eingaben dieses Schritts werden gelöscht.`,resetCurrentStep,true);
+}
+
+function manualSave() {
+  collectStep(current);
+  saveToStorage();
+  const btn = document.getElementById('btnSave');
+  if (!btn) return;
+  btn.textContent = '✓ Gespeichert';
+  btn.classList.add('saved');
+  setTimeout(() => { btn.textContent = '✓ Speichern'; btn.classList.remove('saved'); }, 2000);
 }
 
 function startNewProject() {
