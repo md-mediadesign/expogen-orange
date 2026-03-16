@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expogen – Exposé Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400&family=Ubuntu:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════
+   BASE
+══════════════════════════════════════════════════════ */
+:root{
+  --navy:#07091a;--navy2:#0e1230;--navy3:#161b3a;
+  --gold:#c9a84c;--gold2:#e8c97a;
+  --cream:#f5f0e8;--text:#e8e4dc;--muted:#7a8099;
+  --border:rgba(201,168,76,0.18);--radius:12px;
+  --shadow:0 8px 40px rgba(0,0,0,0.5);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--navy);color:var(--text);font-family:'Roboto',sans-serif;font-weight:300;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  background-image:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(201,168,76,.08) 0%,transparent 70%),
+    repeating-linear-gradient(0deg,transparent,transparent 80px,rgba(255,255,255,.012) 80px,rgba(255,255,255,.012) 81px),
+    repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(255,255,255,.012) 80px,rgba(255,255,255,.012) 81px);}
+
+/* ── Header ── */
+header{width:100%;max-width:1180px;margin:0 auto;padding:2rem 2.5rem 0;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Ubuntu',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:.15em;color:var(--gold2)}
+.logo span{color:var(--text);opacity:.4;font-style:italic;font-size:.9rem;letter-spacing:.05em;margin-left:8px;font-weight:300}
+.btn-header-reset{background:transparent;border:1px solid rgba(224,85,85,.3);border-radius:20px;color:rgba(224,85,85,.7);font-family:'Roboto',sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.06em;padding:.35rem 1rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.4rem}
+.btn-header-reset:hover{border-color:#e05555;color:#e05555;background:rgba(224,85,85,.08)}
+
+/* ── Main Layout ── */
+.main-layout{width:100%;max-width:1180px;margin:2rem auto 0;padding:0 2.5rem;display:flex;gap:2.5rem;align-items:flex-start}
+.card-col{flex:1;min-width:0;padding-bottom:4rem}
+
+/* ── Stepper links ── */
+.stepper-col{width:180px;flex-shrink:0;position:sticky;top:2rem;padding-top:.5rem;order:-1}
+.stepper-label{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:1.2rem;font-family:'Roboto',sans-serif}
+.steps-row{display:flex;flex-direction:column;gap:0}
+.step-dot{display:flex;flex-direction:row;align-items:center;gap:.65rem}
+.dot-circle{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:500;color:var(--muted);transition:all .4s;background:var(--navy2);flex-shrink:0;cursor:pointer}
+.dot-circle:hover{border-color:var(--gold);color:var(--gold)}
+.step-dot.active .dot-circle{border-color:var(--gold);background:var(--gold);color:var(--navy);box-shadow:0 0 16px rgba(201,168,76,.4)}
+.step-dot.done .dot-circle{border-color:var(--gold);background:transparent;color:var(--gold)}
+.dot-label{font-size:.75rem;color:var(--muted);transition:color .4s;font-family:'Roboto',sans-serif;cursor:pointer;flex:1;min-width:0}
+.dot-label:hover{color:var(--text)}
+.step-dot.active .dot-label{color:var(--gold2);font-weight:500}
+.step-dot.done .dot-label{color:var(--gold);opacity:.7}
+.step-line{width:1.5px;height:26px;background:var(--border);margin-left:12px;transition:background .4s}
+.step-line.done{background:rgba(201,168,76,.4)}
+/* Optional step toggle */
+.step-toggle{width:18px;height:18px;border-radius:4px;border:1px solid rgba(201,168,76,.2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:rgba(120,130,160,.5);transition:all .2s;flex-shrink:0;line-height:1}
+.step-toggle:hover{border-color:#e05555;color:#e05555;background:rgba(224,85,85,.08)}
+/* Disabled step */
+.step-dot.step-off .dot-circle{border-color:rgba(120,130,160,.2)!important;background:transparent!important;color:rgba(120,130,160,.3)!important;box-shadow:none!important;cursor:default}
+.step-dot.step-off .dot-label{color:rgba(120,130,160,.3)!important;text-decoration:line-through;cursor:default}
+.step-dot.step-off .step-toggle{border-color:rgba(120,130,160,.2);color:rgba(120,130,160,.4)}
+.step-dot.step-off .step-toggle:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.08)}
+.step-line.step-off{background:rgba(120,130,160,.1)!important}
+@media(min-width:601px) and (max-width:800px){.main-layout{flex-direction:column-reverse;padding:0 1.2rem}.stepper-col{width:100%;position:static}.steps-row{flex-direction:row;flex-wrap:wrap;gap:.5rem}.step-line{display:none}.dot-label{display:none}.step-toggle{display:none}}
+
+/* ── Drawer-Close-Header (Desktop: ausgeblendet) ── */
+.drawer-close-btn{display:none}
+.drawer-close-x{display:none}
+
+/* ── Burger Button (mobile) ── */
+.burger-btn{display:none}
+@media(max-width:600px){
+  .burger-btn{display:flex;align-items:center;gap:.5rem;position:fixed;bottom:1.2rem;left:1.2rem;z-index:600;background:var(--gold);color:var(--navy);border:none;border-radius:50px;padding:.65rem 1.1rem;font-family:'Roboto',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.04em;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:background .2s,transform .15s}
+  .burger-btn:active{transform:scale(.95)}
+  .burger-btn-icon{font-size:1.1rem;line-height:1}
+  .burger-btn-label{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* Overlay-Backdrop */
+  .stepper-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:590;backdrop-filter:blur(3px)}
+  .stepper-backdrop.open{display:block}
+  /* .stepper-col wird zum Drawer */
+  .stepper-col{position:fixed!important;top:0;left:0;bottom:0;width:min(280px,85vw);z-index:595;background:var(--navy2);border-right:1px solid var(--border);padding:2rem 1.5rem 5rem;overflow-y:auto;transform:translateX(-100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:8px 0 40px rgba(0,0,0,.5)}
+  .stepper-col.open{transform:translateX(0)}
+  /* Drawer-Header mit Schließen-Button */
+  .drawer-close-btn{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+  .drawer-close-btn span{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  .drawer-close-x{display:flex;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:.2rem .4rem;border-radius:4px;transition:color .2s}
+  .drawer-close-x:hover{color:var(--cream)}
+  /* Labels + Toggles im Drawer wieder einblenden */
+  .dot-label{display:block!important}
+  .step-toggle{display:flex!important}
+  .step-line{display:block!important}
+  .steps-row{flex-direction:column!important;gap:0!important}
+  /* Stepper-Col aus normalem Flow nehmen */
+  .main-layout{flex-direction:column!important;padding:0 .9rem}
+  header{padding:1.2rem .9rem 0}
+  .step-card{padding:1.5rem 1.2rem}
+  body{overflow-x:hidden}
+}
+
+/* ── Card ── */
+.card-wrap{width:100%}
+.step-card{background:var(--navy2);border:1px solid var(--border);border-radius:20px;padding:3rem;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.step-card::before{content:'';position:absolute;top:-1px;left:20%;right:20%;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.5}
+.step-content{display:none}
+.step-content.active{display:block;animation:fadeSlide .35s ease both}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.step-num{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem;font-family:'Roboto',sans-serif}
+.step-title{font-family:'Ubuntu',sans-serif;font-size:2.3rem;font-weight:700;color:var(--cream);line-height:1.1;margin-bottom:.4rem}
+.step-desc{color:var(--muted);font-size:.85rem;margin-bottom:2rem;line-height:1.6}
+
+/* ── Form ── */
+label{display:block;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:.45rem;font-weight:500;font-family:'Roboto',sans-serif}
+input[type=text],input[type=email],input[type=tel],textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.8rem 1rem;color:var(--text);font-family:'Roboto',sans-serif;font-size:.93rem;font-weight:300;outline:none;transition:border-color .3s,box-shadow .3s,background .3s;margin-bottom:1.3rem;resize:vertical}
+input:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.1);background:rgba(255,255,255,.07)}
+input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:600px){.field-row{grid-template-columns:1fr}}
+.field-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.45rem;gap:.5rem;flex-wrap:wrap}
+.field-header label{margin-bottom:0;flex:1}
+.field-header-btns{display:flex;align-items:center;gap:.4rem;flex-shrink:0}
+.btn-upload-text{background:transparent;border:1px solid rgba(201,168,76,.25);border-radius:20px;color:var(--muted);font-family:'Roboto',sans-serif;font-size:.7rem;font-weight:500;padding:.3rem .9rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.4rem;white-space:nowrap}
+.btn-upload-text:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.06)}
+.btn-ai{background:linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.05));border:1px solid rgba(201,168,76,.35);border-radius:20px;color:var(--gold);font-family:'Roboto',sans-serif;font-size:.7rem;font-weight:500;padding:.3rem 1rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.35rem;white-space:nowrap}
+.btn-ai:hover{background:rgba(201,168,76,.22);border-color:var(--gold);box-shadow:0 2px 14px rgba(201,168,76,.2);transform:translateY(-1px)}
+.error-msg{color:#e07070;font-size:.78rem;margin-top:-1rem;margin-bottom:1rem;display:none}
+.error-msg.show{display:block}
+
+/* ── Größe Cards ── */
+.groesse-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:.8rem}
+@media(max-width:640px){.groesse-grid{grid-template-columns:1fr}}
+.groesse-card{background:rgba(255,255,255,.03);border:1.5px solid rgba(201,168,76,.15);border-radius:var(--radius);padding:1.5rem;cursor:pointer;transition:all .3s;display:flex;flex-direction:column;gap:.5rem}
+.groesse-card:hover{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.05)}
+.groesse-card.selected{border-color:var(--gold);background:rgba(201,168,76,.09);box-shadow:0 0 20px rgba(201,168,76,.12)}
+.groesse-badge{font-family:'Ubuntu',sans-serif;font-size:2rem;font-weight:700;color:var(--gold2)}
+.groesse-name{font-family:'Ubuntu',sans-serif;font-size:1.1rem;font-weight:700;color:var(--cream)}
+.groesse-pages{font-size:.72rem;color:var(--gold);opacity:.7;font-weight:500}
+.groesse-desc{font-size:.78rem;color:var(--muted);line-height:1.4}
+.groesse-steps{font-size:.68rem;color:rgba(201,168,76,.5);margin-top:.3rem}
+
+/* ── Typ Cards ── */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:.8rem}
+.type-card{background:rgba(255,255,255,.03);border:1.5px solid rgba(201,168,76,.15);border-radius:var(--radius);padding:1.4rem 1.5rem;cursor:pointer;transition:all .3s;display:flex;flex-direction:column;gap:.4rem}
+.type-card:hover{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.05)}
+.type-card.selected{border-color:var(--gold);background:rgba(201,168,76,.09);box-shadow:0 0 20px rgba(201,168,76,.12)}
+.type-icon{font-size:1.7rem}
+.type-name{font-family:'Ubuntu',sans-serif;font-size:1.1rem;font-weight:700;color:var(--cream)}
+.type-desc{font-size:.76rem;color:var(--muted);line-height:1.4}
+
+/* ── Color Pair Cards ── */
+.color-pair-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin-bottom:1rem}
+.color-pair-card{border:2px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:border-color .25s,background .25s;text-align:center}
+.color-pair-card:hover{border-color:var(--gold)}
+.color-pair-card.selected{border-color:var(--gold);background:rgba(201,168,76,.07)}
+.cp-swatch{display:flex;height:40px;border-radius:6px;overflow:hidden;margin-bottom:.75rem}
+.cp-swatch-accent,.cp-swatch-secondary{flex:1}
+.cp-name{font-size:.85rem;font-weight:600;color:var(--cream);margin-bottom:.2rem}
+.cp-desc{font-size:.72rem;color:var(--muted)}
+
+/* ── Logo Upload ── */
+.logo-upload-area{border:2px dashed rgba(201,168,76,.25);border-radius:var(--radius);padding:1.8rem;text-align:center;cursor:pointer;transition:all .3s;background:rgba(255,255,255,.02);margin-bottom:1.3rem;display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap}
+.logo-upload-area:hover{border-color:var(--gold);background:rgba(201,168,76,.04)}
+.logo-preview{max-height:60px;max-width:200px;object-fit:contain}
+.logo-placeholder{color:var(--muted);font-size:.88rem}
+
+/* ── Structured fields ── */
+.fields-section{margin-bottom:1.5rem}
+.fields-section-title{font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:1rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
+
+/* ── Photo upload ── */
+.photo-upload-area{border:2px dashed rgba(201,168,76,.25);border-radius:var(--radius);padding:2.5rem 2rem;text-align:center;margin-bottom:1.2rem;cursor:pointer;transition:all .3s;background:rgba(255,255,255,.02)}
+.photo-upload-area:hover{border-color:var(--gold);background:rgba(201,168,76,.04)}
+.photo-upload-area.dragover{border-color:var(--gold2);background:rgba(201,168,76,.08)}
+.upload-icon{font-size:2.5rem;margin-bottom:.8rem;opacity:.5}
+.upload-text{color:var(--muted);font-size:.88rem;margin-bottom:1rem}
+.upload-btns{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
+.btn-photo{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;color:var(--gold);font-family:'Roboto',sans-serif;font-size:.8rem;font-weight:500;padding:.6rem 1.4rem;cursor:pointer;transition:all .25s}
+.btn-photo:hover{background:rgba(201,168,76,.18);border-color:var(--gold)}
+.photo-count{font-size:.75rem;color:var(--muted);margin-bottom:.8rem;text-align:center}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.8rem;margin-bottom:1rem}
+.photo-item{display:flex;flex-direction:column;gap:.3rem}
+.photo-thumb{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:4/3;border:1px solid rgba(201,168,76,.15)}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-thumb .del-photo{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.photo-thumb:hover .del-photo{opacity:1}
+.photo-caption-input{font-size:.72rem;padding:.22rem .4rem;border:1px solid rgba(201,168,76,.2);border-radius:4px;background:rgba(255,255,255,.05);color:var(--fg);width:100%;box-sizing:border-box}
+
+/* ── Highlights / Einheiten ── */
+.list-items{display:flex;flex-direction:column;gap:.65rem;margin-bottom:.9rem}
+.list-item{display:flex;align-items:center;gap:.7rem}
+.list-item input{margin-bottom:0;flex:1}
+.btn-remove{width:30px;height:30px;border-radius:50%;border:1px solid rgba(201,168,76,.2);background:transparent;color:var(--muted);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.btn-remove:hover{border-color:#e05555;color:#e05555;background:rgba(224,85,85,.08)}
+.btn-add{background:transparent;border:1px dashed rgba(201,168,76,.3);border-radius:8px;color:var(--gold);padding:.65rem 1.2rem;cursor:pointer;font-family:'Roboto',sans-serif;font-size:.83rem;font-weight:500;transition:all .25s;display:flex;align-items:center;gap:.5rem;width:100%;justify-content:center}
+.btn-add:hover{background:rgba(201,168,76,.07);border-style:solid}
+
+/* ── Einheiten Table ── */
+.einheiten-table-wrap{overflow-x:auto;margin-bottom:.9rem}
+.einheiten-table{width:100%;border-collapse:collapse}
+.einheiten-table th{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);padding:.5rem .7rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.einheiten-table td{padding:.4rem .4rem}
+.einheiten-table td input{margin-bottom:0;padding:.5rem .7rem;font-size:.82rem}
+.einheiten-table .del-col{width:40px;text-align:center}
+
+/* ── Nav ── */
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:2.2rem;padding-top:1.8rem;border-top:1px solid var(--border)}
+.btn{padding:.8rem 1.8rem;border-radius:8px;font-family:'Roboto',sans-serif;font-size:.85rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .25s;border:none}
+.btn-back{background:transparent;border:1px solid rgba(201,168,76,.25);color:var(--muted)}
+.btn-back:hover{border-color:var(--gold);color:var(--gold)}
+.btn-next{background:var(--gold);color:var(--navy);font-weight:700;box-shadow:0 4px 20px rgba(201,168,76,.25)}
+.btn-next:hover{background:var(--gold2);box-shadow:0 6px 28px rgba(201,168,76,.4);transform:translateY(-1px)}
+.btn-step-reset{background:transparent;border:none;color:var(--muted);font-family:'Roboto',sans-serif;font-size:.75rem;padding:.4rem .8rem;cursor:pointer;transition:color .2s;display:flex;align-items:center;gap:.35rem;border-radius:6px;border:1px solid transparent}
+.btn-step-reset:hover{color:#e05555;border-color:rgba(224,85,85,.2);background:rgba(224,85,85,.05)}
+
+/* ── Template Toggle ── */
+.tmpl-toggle{display:flex;gap:.7rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.tmpl-btn{background:rgba(255,255,255,.03);border:1.5px solid rgba(201,168,76,.2);border-radius:8px;color:var(--muted);font-family:'Roboto',sans-serif;font-size:.8rem;font-weight:500;padding:.6rem 1.3rem;cursor:pointer;transition:all .25s}
+.tmpl-btn:hover{border-color:rgba(201,168,76,.5);color:var(--text)}
+.tmpl-btn.active{border-color:var(--gold);color:var(--gold2);background:rgba(201,168,76,.08);box-shadow:0 0 14px rgba(201,168,76,.12)}
+
+/* ══════════════════════════════════════════════════════
+   EXPOSÉ PREVIEW — Weißes Drucklayout
+══════════════════════════════════════════════════════ */
+#preview-output{font-family:'Roboto',sans-serif;color:#1a1a2e;max-width:820px;margin:0 auto}
+.expo-page{background:#fff;width:100%;position:relative;overflow:hidden;margin-bottom:2.5rem;box-shadow:0 4px 30px rgba(0,0,0,.25)}
+
+/* Cover */
+.expo-cover{display:flex;flex-direction:column;min-height:1060px}
+.expo-cover-header{height:80px;flex-shrink:0;padding:0 2.5rem;display:flex;align-items:center;justify-content:flex-end;border-bottom:1px solid #e0e0e0;overflow:hidden}
+.expo-cover-logo-block{display:flex;align-items:center;justify-content:flex-end;height:100%;max-width:220px;overflow:hidden}
+.expo-cover-logo-img{max-height:52px;max-width:200px;width:auto;height:auto;object-fit:contain;display:block}
+.expo-cover-logo-text{font-family:'Ubuntu',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#1a1a2e;line-height:1}
+.expo-cover-logo-line{width:100%;height:1.5px;background:#1a1a2e;margin-top:5px}
+.expo-cover-hero{flex:1;overflow:hidden;min-height:550px}
+.expo-cover-hero img{width:100%;height:100%;object-fit:cover;display:block;min-height:550px}
+.expo-cover-hero-placeholder{width:100%;min-height:550px;background:linear-gradient(135deg,#1a2033 0%,#0d1117 100%);display:flex;align-items:center;justify-content:center}
+.expo-cover-hero-placeholder span{color:rgba(255,255,255,.2);font-size:1rem;letter-spacing:.1em;text-transform:uppercase}
+.expo-cover-bottom{padding:2rem 2.5rem 2.5rem;text-align:center;border-top:3px solid #1a1a2e}
+.expo-cover-title{font-family:'Ubuntu',sans-serif;font-size:1.7rem;font-weight:700;color:#1a1a2e;line-height:1.2;margin-bottom:.3rem}
+.expo-cover-adresse{font-size:1.1rem;color:#444;margin-bottom:.25rem}
+.expo-cover-preis{font-size:.9rem;color:#888}
+
+/* Inner pages */
+.expo-inner{padding:0}
+.expo-page-header{height:52px;flex-shrink:0;padding:0 2.8rem;display:flex;justify-content:flex-end;align-items:center;border-bottom:1px solid #e0e0e0;overflow:hidden}
+.expo-page-header-logo{font-family:'Ubuntu',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#1a1a2e;display:flex;align-items:center}
+.expo-page-header-logo img{max-height:28px;max-width:120px;width:auto;height:auto;object-fit:contain;display:block}
+.expo-page-content{padding:2.2rem 2.8rem 2.5rem}
+.expo-page-badge{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#888;margin-bottom:.4rem}
+.expo-page-title{font-family:'Ubuntu',sans-serif;font-size:1.7rem;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:.04em;padding-bottom:.8rem;border-bottom:2px solid #1a1a2e;margin-bottom:1.8rem}
+
+/* Data tables */
+.expo-data-section{margin-bottom:1.8rem}
+.expo-data-heading{font-family:'Ubuntu',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1a1a2e;margin-bottom:.7rem}
+.expo-data-table{width:100%;border-collapse:collapse}
+.expo-data-table tr{border-bottom:1px solid #e5e7eb}
+.expo-data-table td{padding:.42rem 0;font-size:.88rem;vertical-align:top}
+.expo-data-table td:first-child{color:#888;width:48%;padding-right:.8rem}
+.expo-data-table td:last-child{color:#1a1a2e;font-weight:500}
+
+/* Two-column layout */
+.expo-two-col{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem}
+.expo-two-col-wide{display:grid;grid-template-columns:3fr 2fr;gap:2.5rem}
+
+/* Body text */
+.expo-body{font-size:.9rem;line-height:1.85;color:#333;white-space:pre-wrap}
+.expo-body-plain{font-size:.9rem;line-height:1.85;color:#333}
+.expo-body-plain p{margin-bottom:.9rem}
+
+/* Highlights list */
+.expo-list{list-style:none;margin:1rem 0}
+.expo-list li{display:flex;align-items:flex-start;gap:.7rem;font-size:.88rem;color:#333;padding:.4rem 0;border-bottom:1px solid #f0f0f0}
+.expo-list li:last-child{border-bottom:none}
+.expo-list li::before{content:'—';color:#1a1a2e;font-weight:700;flex-shrink:0}
+
+/* Photos page */
+.expo-photo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px}
+.expo-photo-grid img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.expo-photo-grid img:first-child{grid-column:1/-1;aspect-ratio:16/7}
+.expo-photo-grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:3px}
+.expo-photo-grid-2col img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+
+/* Einheiten table */
+.expo-units{width:100%;border-collapse:collapse;font-size:.88rem}
+.expo-units thead tr{background:#1a1a2e;color:#fff}
+.expo-units thead th{padding:.65rem 1rem;text-align:left;font-weight:600;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase}
+.expo-units tbody tr{border-bottom:1px solid #e5e7eb}
+.expo-units tbody tr:nth-child(even){background:#f9fafb}
+.expo-units tbody td{padding:.55rem 1rem;color:#333}
+
+/* Investment */
+.expo-invest-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0}
+.expo-invest-item{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:1rem 1.2rem;border-left:3px solid #1a1a2e}
+.expo-invest-label{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;font-weight:700;margin-bottom:.3rem}
+.expo-invest-value{font-size:1rem;font-weight:700;color:#1a1a2e}
+
+/* Contact */
+.expo-contact{display:grid;grid-template-columns:1fr 1fr;gap:.5rem 2rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:1.2rem 1.5rem;margin-top:1rem}
+.expo-contact-item strong{display:block;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;font-weight:700;margin-bottom:.2rem}
+.expo-contact-item span{font-size:.9rem;color:#1a1a2e}
+
+/* Sidebar photo on data page */
+.expo-sidebar-img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:4px}
+
+/* ══════════════════════════════════════════════════════
+   STARTUP MODAL
+══════════════════════════════════════════════════════ */
+.startup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.startup-overlay.open{opacity:1;pointer-events:all}
+.startup-modal{background:var(--navy2);border:1px solid var(--border);border-radius:20px;padding:2.5rem 2.4rem;max-width:460px;width:92%;box-shadow:0 32px 100px rgba(0,0,0,.8);transform:scale(.95);transition:transform .3s;text-align:center}
+.startup-overlay.open .startup-modal{transform:scale(1)}
+.startup-logo{font-family:'Ubuntu',sans-serif;font-size:1.6rem;font-weight:700;color:var(--gold);letter-spacing:.04em;margin-bottom:.4rem}
+.startup-tagline{font-size:.82rem;color:var(--muted);margin-bottom:2rem}
+.startup-options{display:flex;flex-direction:column;gap:.75rem}
+.btn-startup{border-radius:12px;padding:1rem 1.4rem;font-family:'Roboto',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;border:none;display:flex;align-items:center;gap:.8rem;text-align:left}
+.btn-startup-primary{background:var(--gold);color:var(--navy)}
+.btn-startup-primary:hover{background:#dbb84a;transform:translateY(-1px)}
+.btn-startup-secondary{background:rgba(255,255,255,.06);color:var(--cream);border:1px solid rgba(255,255,255,.1)}
+.btn-startup-secondary:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
+.btn-startup-resume{background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.25)}
+.btn-startup-resume:hover{background:rgba(201,168,76,.2);transform:translateY(-1px)}
+.btn-startup-icon{font-size:1.3rem;flex-shrink:0}
+.btn-startup-text strong{display:block;font-size:.88rem}
+.btn-startup-text span{font-size:.76rem;font-weight:400;opacity:.7}
+
+/* ══════════════════════════════════════════════════════
+   MODALS
+══════════════════════════════════════════════════════ */
+.confirm-overlay,.ai-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(5px);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.confirm-overlay.open,.ai-modal-overlay.open{opacity:1;pointer-events:all}
+.confirm-modal,.ai-modal{background:var(--navy2);border:1px solid var(--border);border-radius:16px;padding:2rem 2.2rem;max-width:420px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.7);transform:scale(.95);transition:transform .25s}
+.confirm-overlay.open .confirm-modal,.ai-modal-overlay.open .ai-modal{transform:scale(1)}
+.confirm-modal-icon{font-size:2rem;margin-bottom:.8rem;text-align:center}
+.confirm-modal-title,.ai-modal-title{font-family:'Ubuntu',sans-serif;font-size:1.2rem;font-weight:700;color:var(--cream);margin-bottom:.5rem;text-align:center}
+.ai-modal-title{text-align:left;margin-bottom:.3rem}
+.confirm-modal-desc,.ai-modal-desc{font-size:.84rem;color:var(--muted);line-height:1.6;text-align:center;margin-bottom:1.5rem}
+.ai-modal-desc{text-align:left;margin-bottom:1.2rem}
+.confirm-modal-actions,.ai-modal-actions{display:flex;gap:.7rem;justify-content:center}
+.ai-modal-actions{justify-content:flex-end}
+.btn-confirm-cancel,.btn-ai-cancel{background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--muted);font-family:'Roboto',sans-serif;font-size:.83rem;font-weight:500;padding:.65rem 1.4rem;cursor:pointer;transition:all .2s;min-width:100px}
+.btn-confirm-cancel:hover,.btn-ai-cancel:hover{border-color:rgba(255,255,255,.3);color:var(--text)}
+.btn-confirm-ok{border:none;border-radius:8px;font-family:'Roboto',sans-serif;font-size:.83rem;font-weight:700;padding:.65rem 1.4rem;cursor:pointer;transition:all .25s;min-width:100px;background:#c0392b;color:#fff}
+.btn-confirm-ok:hover{background:#e74c3c;box-shadow:0 4px 16px rgba(224,85,85,.35)}
+.btn-confirm-ok.warn{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35)}
+.btn-confirm-ok.warn:hover{background:rgba(201,168,76,.25)}
+.ai-modal-prompt{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.75rem 1rem;color:var(--text);font-family:'Roboto',sans-serif;font-size:.88rem;outline:none;resize:vertical;margin-bottom:1.2rem;min-height:70px;transition:border-color .3s}
+.ai-modal-prompt:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.1)}
+.btn-ai-generate{background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Roboto',sans-serif;font-size:.8rem;font-weight:700;padding:.6rem 1.4rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.5rem}
+.btn-ai-generate:hover{background:var(--gold2);box-shadow:0 4px 18px rgba(201,168,76,.35)}
+
+/* ══════════════════════════════════════════════════════
+   PRINT
+══════════════════════════════════════════════════════ */
+.map-toggle-row{display:flex;align-items:center;gap:.6rem;margin-top:1.2rem;font-size:.85rem;color:var(--text);cursor:pointer;user-select:none}
+.map-toggle-row input{accent-color:var(--gold);width:16px;height:16px;cursor:pointer}
+#lageMapPreview{z-index:0}
+
+@media print{
+  .leaflet-container{position:relative!important}
+  .leaflet-pane,.leaflet-tile-pane{position:absolute!important}
+  .expogen-map{overflow:visible!important}
+
+  /* Farben & Hintergründe erzwingen */
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+
+  body{background:#fff!important;margin:0!important;padding:0!important}
+
+  /* Alle UI-Elemente ausblenden */
+  header,
+  .stepper-col,
+  .nav-row,
+  .btn-step-reset,
+  .btn-header-reset,
+  .confirm-overlay,
+  .ai-modal-overlay,
+  .preview-actions,
+  .tmpl-toggle,
+  .step-num,
+  .step-title,
+  .step-desc{display:none!important}
+
+  /* Layout-Wrapper zurücksetzen */
+  .main-layout{display:block!important;padding:0!important;margin:0!important;max-width:none!important}
+  .card-col{padding:0!important}
+  .card-wrap{padding:0!important}
+
+  /* Step-Card: Styling entfernen, NICHT verstecken */
+  .step-card{background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important;border-radius:0!important;overflow:visible!important}
+  .step-card::before{display:none!important}
+
+  /* Alle Schritte ausblenden – nur Vorschau (Step 16) zeigen */
+  .step-content{display:none!important}
+  .step-content[data-step="16"]{display:block!important}
+
+  /* Preview-Output */
+  #preview-output{max-width:none!important;margin:0!important}
+
+  /* Jede Seite = exakt DIN A4 */
+  .expo-page{
+    page-break-after:always!important;
+    break-after:page!important;
+    margin:0!important;
+    box-shadow:none!important;
+    width:210mm!important;
+    height:297mm!important;
+    overflow:hidden!important;
+    position:relative!important;
+  }
+  .expo-page:last-child{page-break-after:auto!important;break-after:auto!important}
+
+  /* Cover: Hero-Bild auf volle verbleibende Höhe strecken */
+  .expo-cover{height:297mm!important}
+  .expo-cover-hero{flex:1!important;min-height:0!important}
+  .expo-cover-hero img{height:100%!important;min-height:0!important}
+
+  @page{size:A4 portrait;margin:0}
+}
+
+/* ── Voice Entry Button ─────────────────────────── */
+/* ── Hinweis Generator ── */
+.hinweis-gen-panel{background:rgba(201,168,76,.03);border:1px solid rgba(201,168,76,.14);border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.hinweis-mode-row{display:flex;gap:.5rem;margin-bottom:1.2rem;align-items:center}
+.hinweis-mode-label{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-right:.3rem;white-space:nowrap}
+.hinweis-mode-btn{background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.2);border-radius:6px;color:var(--muted);font-family:'Roboto',sans-serif;font-size:.78rem;padding:.35rem .9rem;cursor:pointer;transition:all .2s}
+.hinweis-mode-btn.active{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold2);font-weight:500}
+.hinweis-cats-label{font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:.7rem}
+.hinweis-cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:.35rem .8rem;margin-bottom:1rem}
+@media(max-width:600px){.hinweis-cat-grid{grid-template-columns:1fr}}
+.hinweis-cat-item{display:flex;align-items:center;gap:.5rem;cursor:pointer;padding:.2rem .3rem;border-radius:5px;transition:background .15s}
+.hinweis-cat-item:hover{background:rgba(201,168,76,.06)}
+.hinweis-cat-item input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer;flex-shrink:0;margin-top:1px}
+.hinweis-cat-name{font-size:.78rem;color:var(--text);line-height:1.3}
+.hinweis-cat-auto{font-size:.62rem;background:rgba(201,168,76,.12);color:var(--gold);padding:.1rem .4rem;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.btn-hinweis-gen{background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Roboto',sans-serif;font-size:.84rem;font-weight:700;padding:.7rem 1.4rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.5rem;width:100%;justify-content:center;margin-bottom:1rem;letter-spacing:.04em}
+.btn-hinweis-gen:hover{background:var(--gold2);box-shadow:0 4px 18px rgba(201,168,76,.35);transform:translateY(-1px)}
+.hinweis-result-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem}
+.hinweis-result-label{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.btn-hinweis-ki{background:transparent;border:1px solid rgba(201,168,76,.3);border-radius:6px;color:var(--gold);font-family:'Roboto',sans-serif;font-size:.72rem;font-weight:500;padding:.3rem .85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.35rem}
+.btn-hinweis-ki:hover{background:rgba(201,168,76,.1);border-color:var(--gold)}
+.btn-hinweis-ki:disabled{opacity:.4;cursor:not-allowed}
+.hinweis-info-note{font-size:.72rem;color:var(--muted);line-height:1.6;margin-bottom:.9rem;padding:.6rem .8rem;border-left:2px solid rgba(201,168,76,.25);background:rgba(201,168,76,.03);border-radius:0 6px 6px 0}
+
+/* ── Extras Step Toggle ── */
+.extras-block{border:1px solid rgba(201,168,76,.18);border-radius:12px;padding:1.4rem 1.5rem;margin-bottom:1.2rem;transition:border-color .25s}
+.extras-block.active{border-color:rgba(201,168,76,.4)}
+.extras-block-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;cursor:pointer;gap:.8rem}
+.extras-block-header-left{display:flex;align-items:center;gap:.75rem}
+.extras-block-icon{font-size:1.2rem;flex-shrink:0}
+.extras-block-title{font-family:'Ubuntu',sans-serif;font-size:1rem;font-weight:700;color:var(--cream)}
+.extras-block-desc{font-size:.75rem;color:var(--muted);margin-top:.15rem}
+.extras-toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.extras-toggle input{opacity:0;width:0;height:0;position:absolute}
+.extras-toggle-slider{position:absolute;inset:0;background:rgba(120,130,160,.3);border-radius:12px;transition:.3s;cursor:pointer}
+.extras-toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+.extras-toggle input:checked + .extras-toggle-slider{background:var(--gold)}
+.extras-toggle input:checked + .extras-toggle-slider::before{transform:translateX(20px)}
+.extras-block-body{margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid rgba(201,168,76,.15)}
+.extras-qr-row{display:flex;gap:1.5rem;align-items:flex-start;flex-wrap:wrap;margin-top:.8rem}
+.extras-qr-preview{width:100px;height:100px;border:1px solid rgba(201,168,76,.2);border-radius:8px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.03)}
+.extras-qr-preview img{width:100%;height:100%;object-fit:contain;display:block}
+.extras-qr-hint{font-size:.72rem;color:var(--muted);margin-top:.5rem;line-height:1.5}
+.extras-pair{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:600px){.extras-pair{grid-template-columns:1fr}}
+
+.voice-entry-wrap {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(201,168,76,.18);
+}
+.btn-voice-entry {
+  background: #2a2a5e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: .75rem 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-voice-entry:hover { background: #1a1a4e; }
+.voice-entry-hint {
+  font-size: .8rem;
+  color: var(--muted);
+  margin-top: .5rem;
+}
+
+/* ── Voice Modal ────────────────────────────────── */
+.voice-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 1100;
+  align-items: center;
+  justify-content: center;
+}
+.voice-modal-overlay.open { display: flex; }
+.voice-modal {
+  background: var(--navy2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.75rem;
+  width: min(580px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+}
+.voice-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.voice-modal-title { font-size: 1.15rem; font-weight: 700; color: var(--cream); }
+.voice-modal-close {
+  background: none; border: none;
+  font-size: 1.2rem; cursor: pointer; color: var(--muted);
+}
+.voice-status {
+  font-size: .85rem;
+  color: var(--muted);
+  min-height: 1.2em;
+}
+.voice-status.recording { color: #e05555; font-weight: 600; }
+
+/* Waveform animation */
+.voice-wave {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.voice-wave.active { opacity: 1; }
+.voice-wave span {
+  display: block;
+  width: 5px;
+  background: #e05555;
+  border-radius: 3px;
+  animation: wave 1s ease-in-out infinite;
+}
+.voice-wave span:nth-child(1){ height:8px;  animation-delay:0s;    }
+.voice-wave span:nth-child(2){ height:20px; animation-delay:.15s;  }
+.voice-wave span:nth-child(3){ height:28px; animation-delay:.3s;   }
+.voice-wave span:nth-child(4){ height:18px; animation-delay:.45s;  }
+.voice-wave span:nth-child(5){ height:10px; animation-delay:.6s;   }
+@keyframes wave {
+  0%,100% { transform: scaleY(1); }
+  50%      { transform: scaleY(1.8); }
+}
+
+.voice-transcript-label { font-size: .78rem; color: var(--muted); font-weight: 600; }
+.voice-transcript {
+  width: 100%;
+  border: 1px solid rgba(201,168,76,.2);
+  border-radius: 8px;
+  padding: .7rem;
+  font-size: .88rem;
+  resize: vertical;
+  box-sizing: border-box;
+  line-height: 1.5;
+  background: rgba(255,255,255,.04);
+  color: var(--text);
+  font-family: 'Roboto', sans-serif;
+}
+.voice-transcript:focus { border-color: var(--gold); outline: none; }
+.voice-controls {
+  display: flex;
+  gap: .75rem;
+}
+.btn-voice-record {
+  flex: 1;
+  padding: .7rem;
+  border-radius: 8px;
+  border: 2px solid #e05555;
+  background: transparent;
+  color: #e05555;
+  font-weight: 600;
+  font-size: .9rem;
+  cursor: pointer;
+  transition: all .2s;
+  font-family: 'Roboto', sans-serif;
+}
+.btn-voice-record.recording {
+  background: #e05555;
+  color: #fff;
+}
+.btn-voice-generate {
+  flex: 1;
+  padding: .7rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--gold);
+  color: var(--navy);
+  font-weight: 600;
+  font-size: .9rem;
+  cursor: pointer;
+  transition: background .2s;
+  font-family: 'Roboto', sans-serif;
+}
+.btn-voice-generate:disabled { background: var(--muted); cursor: not-allowed; opacity: .5; }
+.btn-voice-generate:not(:disabled):hover { background: var(--gold2); }
+.voice-hint { font-size: .78rem; color: var(--muted); line-height: 1.5; }
+.voice-no-support {
+  background: rgba(201,168,76,.08);
+  border: 1px solid rgba(201,168,76,.2);
+  border-radius: 8px;
+  padding: .7rem;
+  font-size: .85rem;
+  color: var(--gold2);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">EXPOGEN <span>Exposé Generator</span></div>
+  <button class="btn-header-reset" onclick="openConfirmAll()">↺ Alles zurücksetzen</button>
+</header>
+
+<div class="main-layout">
+  <div class="card-col">
+  <div class="card-wrap">
+  <div class="step-card">
+
+    <!-- Step 1: Größe -->
+    <div class="step-content" data-step="1">
+      <div class="step-num" id="stepNum1"></div>
+      <div class="step-title">Exposé-Größe</div>
+      <div class="step-desc">Wählen Sie den Umfang – je nach Objekt und Verwendungszweck.</div>
+      <div class="voice-entry-wrap">
+        <button class="btn-voice-entry" onclick="openVoiceModal()">
+          🎙 Objekt per Sprache aufnehmen
+        </button>
+        <p class="voice-entry-hint">Gehen Sie durch die Immobilie und beschreiben Sie, was Sie sehen – die KI erstellt das komplette Exposé.</p>
+      </div>
+      <div class="groesse-grid">
+        <div class="groesse-card" data-size="S" onclick="selectGroesse(this)">
+          <div class="groesse-badge">S</div>
+          <div class="groesse-name">Kompakt</div>
+          <div class="groesse-pages">1 – 2 Seiten</div>
+          <div class="groesse-desc">Einfache Objekte, Mietwohnungen, schnelle Vermarktung</div>
+          <div class="groesse-steps">Titel · Fotos · Daten · Kontakt</div>
+        </div>
+        <div class="groesse-card" data-size="M" onclick="selectGroesse(this)">
+          <div class="groesse-badge">M</div>
+          <div class="groesse-name">Standard</div>
+          <div class="groesse-pages">3 – 5 Seiten</div>
+          <div class="groesse-desc">Kaufobjekte, Eigentumswohnungen, Häuser</div>
+          <div class="groesse-steps">+ Beschreibung · Highlights · Lage</div>
+        </div>
+        <div class="groesse-card" data-size="L" onclick="selectGroesse(this)">
+          <div class="groesse-badge">L</div>
+          <div class="groesse-name">Premium</div>
+          <div class="groesse-pages">6 – 10 Seiten</div>
+          <div class="groesse-desc">Neubauprojekte, Exklusivobjekte, Kapitalanlagen</div>
+          <div class="groesse-steps">+ Standort · Ausstattung · Einheiten · Investment</div>
+        </div>
+      </div>
+      <p class="error-msg" id="err-groesse">Bitte wählen Sie eine Größe aus.</p>
+    </div>
+
+    <!-- Step 2: Typ -->
+    <div class="step-content" data-step="2">
+      <div class="step-num" id="stepNum2"></div>
+      <div class="step-title">Exposé-Typ</div>
+      <div class="step-desc">Wählen Sie die Art des Objekts.</div>
+      <div class="type-grid">
+        <div class="type-card" data-type="Eigentumswohnung" onclick="selectType(this)"><div class="type-icon">🏢</div><div class="type-name">Eigentumswohnung</div><div class="type-desc">ETW, Penthouse, Apartment</div></div>
+        <div class="type-card" data-type="Haus" onclick="selectType(this)"><div class="type-icon">🏡</div><div class="type-name">Haus / Villa</div><div class="type-desc">EFH, DHH, Reihenhaus, Villa</div></div>
+        <div class="type-card" data-type="Neubau-Projekt" onclick="selectType(this)"><div class="type-icon">🏗</div><div class="type-name">Neubau-Projekt</div><div class="type-desc">MFH, Projektentwicklung, Kapitalanlage</div></div>
+        <div class="type-card" data-type="Gewerbe" onclick="selectType(this)"><div class="type-icon">🏛</div><div class="type-name">Gewerbe</div><div class="type-desc">Büro, Einzelhandel, Halle</div></div>
+        <div class="type-card" data-type="Grundstück" onclick="selectType(this)"><div class="type-icon">📐</div><div class="type-name">Grundstück</div><div class="type-desc">Bauland, Investitionsgrundstück</div></div>
+        <div class="type-card" data-type="Sonstiges" onclick="selectType(this)"><div class="type-icon">✦</div><div class="type-name">Sonstiges</div><div class="type-desc">Individuelles Exposé</div></div>
+      </div>
+      <p class="error-msg" id="err-type">Bitte wählen Sie einen Typ aus.</p>
+    </div>
+
+    <!-- Step 3: Branding -->
+    <div class="step-content" data-step="3">
+      <div class="step-num" id="stepNum3"></div>
+      <div class="step-title">Firmen-Branding</div>
+      <div class="step-desc">Ihr Name und Logo erscheinen auf jedem Exposé-Deckblatt.</div>
+      <label>Firmenname / Makler</label>
+      <input type="text" id="f-brandFirma" placeholder="z. B. Gold Immobilien GmbH">
+      <label>Logo</label>
+      <div class="logo-upload-area" id="logoDropArea" onclick="document.getElementById('logoInput').click()">
+        <img id="logoPreviewImg" class="logo-preview" style="display:none">
+        <div class="logo-placeholder" id="logoPlaceholder">📁 Logo hochladen (PNG, JPG, SVG)</div>
+      </div>
+      <input type="file" id="logoInput" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+    </div>
+
+    <!-- Step 4: Titel & Adresse -->
+    <div class="step-content" data-step="4">
+      <div class="step-num" id="stepNum4"></div>
+      <div class="step-title">Objekt & Preis</div>
+      <div class="step-desc">Titel, Adresse und Preis erscheinen auf dem Deckblatt.</div>
+      <div class="field-header"><label>Titel *</label><div class="field-header-btns"><button class="btn-ai" onclick="openAiModal('f-titel','Exposé-Titel')">✦ KI</button></div></div>
+      <input type="text" id="f-titel" placeholder="z. B. Mittelring 13 – Leipzig">
+      <p class="error-msg" id="err-titel">Bitte geben Sie einen Titel ein.</p>
+      <div class="field-header"><label>Untertitel</label><div class="field-header-btns"><button class="btn-ai" onclick="openAiModal('f-untertitel','Untertitel')">✦ KI</button></div></div>
+      <input type="text" id="f-untertitel" placeholder="z. B. Neubau-Projekt · KfW 40 QNG · 11 Wohneinheiten">
+      <div class="field-row">
+        <div><label>Adresse *</label><input type="text" id="f-adresse" placeholder="Straße, PLZ Ort"><p class="error-msg" id="err-adresse">Bitte geben Sie eine Adresse ein.</p></div>
+        <div><label>Kaufpreis / Startpreis</label><input type="text" id="f-preis" placeholder="z. B. Ab 189.000 €"></div>
+      </div>
+      <label>Preisdetail</label>
+      <input type="text" id="f-preisDetail" placeholder="z. B. 3,57 % inkl. MwSt. Käuferprovision">
+    </div>
+
+    <!-- Step 5: Fotos -->
+    <div class="step-content" data-step="5">
+      <div class="step-num" id="stepNum5"></div>
+      <div class="step-title">Fotos & Visualisierungen</div>
+      <div class="step-desc">Das erste Bild wird als Deckblatt-Hauptbild verwendet. Bis zu 20 Bilder. Optional Beschreibung pro Bild.</div>
+      <div class="photo-count" id="photoCount">0 / 20 Fotos</div>
+      <div class="photo-grid" id="photoGrid"></div>
+      <div class="photo-upload-area" id="dropZone">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">Fotos / Visualisierungen hier hineinziehen oder auswählen</div>
+        <div class="upload-btns">
+          <button class="btn-photo" onclick="document.getElementById('fileUpload').click()">📁 Dateien auswählen</button>
+          <button class="btn-photo" onclick="document.getElementById('cameraInput').click()">📸 Kamera</button>
+        </div>
+      </div>
+      <input type="file" id="fileUpload" accept="image/*" multiple style="display:none" onchange="handlePhotoFiles(this.files)">
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhotoFiles(this.files)">
+    </div>
+
+    <!-- Step 6: Objektdaten -->
+    <div class="step-content" data-step="6">
+      <div class="step-num" id="stepNum6"></div>
+      <div class="step-title">Objektdaten</div>
+      <div class="step-desc">Strukturierte Kerndaten für die Datentabelle im Exposé.</div>
+      <div class="fields-section">
+        <div class="fields-section-title">Grunddaten</div>
+        <div class="field-row"><div><label>Baujahr</label><input type="text" id="f-baujahr" placeholder="z. B. 2026 (Neubau)"></div><div><label>Zustand</label><input type="text" id="f-zustand" placeholder="z. B. Neubau, Erstbezug, Gehoben"></div></div>
+        <div class="field-row"><div><label>Verfügbarkeit</label><input type="text" id="f-verfuegbar" placeholder="z. B. Voraussichtlich Q4 2026"></div><div><label>Hausgeld / Nebenkosten</label><input type="text" id="f-hausgeld" placeholder="z. B. 280 €/Monat"></div></div>
+        <div class="field-row"><div><label>Denkmalschutz</label><input type="text" id="f-denkmal" placeholder="Nein"></div><div><label>Einheiten / Wohnungen</label><input type="text" id="f-einheitenAnz" placeholder="z. B. 11 Wohneinheiten"></div></div>
+      </div>
+      <div class="fields-section">
+        <div class="fields-section-title">Fläche & Aufteilung</div>
+        <div class="field-row"><div><label>Wohnfläche (Einheit)</label><input type="text" id="f-wohnflaeche" placeholder="z. B. 36 – 78 m²"></div><div><label>Gesamtfläche</label><input type="text" id="f-gesamtflaeche" placeholder="z. B. 621,36 m²"></div></div>
+        <div class="field-row"><div><label>Zimmer</label><input type="text" id="f-zimmer" placeholder="z. B. 1 – 3-Zimmer-Wohnungen"></div><div></div></div>
+      </div>
+      <div class="fields-section">
+        <div class="fields-section-title">Stellplätze</div>
+        <div style="margin-bottom:.7rem"><label style="margin-bottom:.4rem;display:block">Art (Mehrfachauswahl)</label><div style="display:flex;flex-wrap:wrap;gap:.5rem .9rem"><label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;font-weight:400"><input type="checkbox" class="stellplatz-typ" value="Tiefgarage"> Tiefgarage</label><label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;font-weight:400"><input type="checkbox" class="stellplatz-typ" value="Außenstellplatz"> Außenstellplatz</label><label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;font-weight:400"><input type="checkbox" class="stellplatz-typ" value="Garage"> Garage</label><label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;font-weight:400"><input type="checkbox" class="stellplatz-typ" value="Duplex (Hublift)"> Duplex (Hublift)</label><label style="display:flex;align-items:center;gap:.35rem;font-size:.85rem;font-weight:400"><input type="checkbox" class="stellplatz-typ" value="Carport"> Carport</label></div></div>
+        <div class="field-row"><div><label>Anzahl Stellplätze</label><input type="number" id="f-stellplaetze-anz" placeholder="z. B. 11" min="0"></div><div><label>Kosten</label><input type="text" id="f-stellplaetze-kosten" placeholder="z. B. 75 €/Monat oder Im Kaufpreis"></div></div>
+      </div>
+      <div class="fields-section">
+        <div class="fields-section-title">Heizung & Energie</div>
+        <div class="field-row"><div><label>Energiestandard</label><input type="text" id="f-energiestandard" placeholder="z. B. KfW 40 QNG"></div><div><label>Heizung</label><input type="text" id="f-heizung" placeholder="z. B. Wärmepumpe"></div></div>
+        <div class="field-row"><div><label>Heizungsart</label><input type="text" id="f-heizungsart" placeholder="z. B. Fußbodenheizung"></div><div><label>Energieausweis</label><input type="text" id="f-energieausweis" placeholder="z. B. Liegt vor / Wird beigestellt"></div></div>
+        <div class="field-row"><div><label>Energieklasse</label><select id="f-energieklasse"><option value="">— keine Angabe —</option><option>A+</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select></div><div><label>Primärenergiebedarf (kWh/m²·a)</label><input type="text" id="f-energiekennwert" placeholder="z. B. 28,5"></div></div>
+        <div class="field-row"><div><label>Ausweistyp</label><select id="f-energieausweisTyp"><option value="">— keine Angabe —</option><option>Bedarfsausweis</option><option>Verbrauchsausweis</option></select></div><div></div></div>
+      </div>
+      <div class="fields-section">
+        <div class="fields-section-title">Kaufpreis</div>
+        <div class="field-row"><div><label>Käuferprovision</label><input type="text" id="f-kaeuferp" placeholder="z. B. 3,57 % inkl. MwSt."></div><div><label>Weitere Kosten</label><input type="text" id="f-weitereKosten" placeholder="z. B. Notarkosten, Grunderwerbssteuer"></div></div>
+      </div>
+    </div>
+
+    <!-- Step 7: Beschreibung -->
+    <div class="step-content" data-step="7">
+      <div class="step-num" id="stepNum7"></div>
+      <div class="step-title">Beschreibung</div>
+      <div class="step-desc">Haupttext und Highlights des Objekts.</div>
+      <div class="field-header"><label>Hauptbeschreibung *</label><div class="field-header-btns"><button class="btn-ai" onclick="openAiModal('f-beschreibung','Objektbeschreibung')">✦ KI</button></div></div>
+      <textarea id="f-beschreibung" rows="8" placeholder="Ausführliche Beschreibung des Objekts …"></textarea>
+      <p class="error-msg" id="err-beschr">Bitte geben Sie eine Beschreibung ein.</p>
+      <label>Highlights (Stichpunkte)</label>
+      <div class="list-items" id="highlightList"></div>
+      <button class="btn-add" onclick="addHighlight()">+ Highlight hinzufügen</button>
+    </div>
+
+    <!-- Step 8: Lage [M+L] -->
+    <div class="step-content" data-step="8">
+      <div class="step-num" id="stepNum8"></div>
+      <div class="step-title">Lage & Stadtteil</div>
+      <div class="step-desc">Beschreibung der Mikrolage und des Stadtteils.</div>
+      <div class="field-header"><label>Lagetext</label><div class="field-header-btns"><button class="btn-ai" onclick="openAiModal('f-lage','Lagebeschreibung')">✦ KI</button></div></div>
+      <textarea id="f-lage" rows="7" placeholder="Lage, Stadtteil, Infrastruktur, Verkehrsanbindung …"></textarea>
+      <label class="map-toggle-row">
+        <input type="checkbox" id="f-mapEnabled" onchange="onMapToggle()">
+        Karte in Exposé einbinden
+      </label>
+      <div id="lageMapWrap" style="display:none">
+        <div id="lageMapPreview" style="height:220px;border-radius:8px;margin-top:.7rem;border:1px solid rgba(201,168,76,.2);overflow:hidden"></div>
+        <button class="btn-add" onclick="geocodeAdresse()" style="margin-top:.6rem">Adresse auf Karte suchen</button>
+      </div>
+    </div>
+
+    <!-- Step 9: Stadtbeschreibung [L] -->
+    <div class="step-content" data-step="9">
+      <div class="step-num" id="stepNum9"></div>
+      <div class="step-title">Standort & Stadt</div>
+      <div class="step-desc">Allgemeine Stadtbeschreibung für Investoren und Käufer von außerhalb.</div>
+      <div class="field-header"><label>Stadtbeschreibung</label><div class="field-header-btns"><button class="btn-ai" onclick="openAiModal('f-stadtbeschr','Stadtbeschreibung')">✦ KI</button></div></div>
+      <textarea id="f-stadtbeschr" rows="10" placeholder="Wirtschaft, Infrastruktur, Kultur, Wachstum …"></textarea>
+    </div>
+
+    <!-- Step 10: Ausstattung [L] -->
+    <div class="step-content" data-step="10">
+      <div class="step-num" id="stepNum10"></div>
+      <div class="step-title">Ausstattung</div>
+      <div class="step-desc">Baubeschreibung und Ausstattungsmerkmale.</div>
+      <div class="field-header"><label>Ausstattungstext</label><div class="field-header-btns"><button class="btn-ai" onclick="openAiModal('f-ausstattung','Ausstattungsbeschreibung')">✦ KI</button></div></div>
+      <textarea id="f-ausstattung" rows="8" placeholder="Bodenbeläge, Sanitär, Heizung, Fenster, Besonderheiten …"></textarea>
+      <label>Ausstattungs-Highlights</label>
+      <div class="list-items" id="ausstattungList"></div>
+      <button class="btn-add" onclick="addAusstattung()">+ Merkmal hinzufügen</button>
+    </div>
+
+    <!-- Step 11: Einheiten [L, Neubau-Projekt] -->
+    <div class="step-content" data-step="11">
+      <div class="step-num" id="stepNum11"></div>
+      <div class="step-title">Wohnungstypen</div>
+      <div class="step-desc">Übersicht der verfügbaren Einheiten mit Fläche und Preis.</div>
+      <div class="einheiten-table-wrap">
+        <table class="einheiten-table">
+          <thead><tr>
+            <th>Typ</th><th>Anzahl</th><th>Wohnfläche</th><th>Preis</th><th>Besonderheit</th><th class="del-col"></th>
+          </tr></thead>
+          <tbody id="einheitenBody"></tbody>
+        </table>
+      </div>
+      <button class="btn-add" onclick="addEinheit()">+ Einheit hinzufügen</button>
+    </div>
+
+    <!-- Step 12: Investment [L] -->
+    <div class="step-content" data-step="12">
+      <div class="step-num" id="stepNum12"></div>
+      <div class="step-title">Investment-Case</div>
+      <div class="step-desc">Steuerliche Vorteile und Rendite-Argumente für Kapitalanleger.</div>
+      <div class="field-header"><label>Investment-Text</label><div class="field-header-btns"><button class="btn-ai" onclick="openAiModal('f-investment','Investment-Beschreibung')">✦ KI</button></div></div>
+      <textarea id="f-investment" rows="5" placeholder="Überblick über steuerliche Vorteile, Renditeerwartung …"></textarea>
+      <label>Investment-Highlights</label>
+      <div class="list-items" id="investList"></div>
+      <button class="btn-add" onclick="addInvest()">+ Vorteil hinzufügen</button>
+    </div>
+
+    <!-- Step 13: Kontakt -->
+    <div class="step-content" data-step="13">
+      <div class="step-num" id="stepNum13"></div>
+      <div class="step-title">Kontaktdaten</div>
+      <div class="step-desc">Angaben zur Kontaktperson – erscheinen auf der letzten Exposé-Seite.</div>
+      <div class="field-row">
+        <div><label>Name *</label><input type="text" id="f-name" placeholder="Vor- und Nachname"><p class="error-msg" id="err-name">Bitte geben Sie einen Namen ein.</p></div>
+        <div><label>Telefon</label><input type="tel" id="f-tel" placeholder="+49 …"></div>
+      </div>
+      <div class="field-row">
+        <div><label>E-Mail</label><input type="email" id="f-email" placeholder="email@beispiel.de"></div>
+        <div><label>Firma</label><input type="text" id="f-firma" placeholder="Firmenname"></div>
+      </div>
+      <label>Adresse (Kontakt)</label>
+      <input type="text" id="f-kontaktAdresse" placeholder="Straße, PLZ Stadt">
+    </div>
+
+    <!-- Step 14: Extras -->
+    <div class="step-content" data-step="14">
+      <div class="step-num" id="stepNum14"></div>
+      <div class="step-title">Extras & Anhang</div>
+      <div class="step-desc">Optionale Zusatzinhalte für Ihr Exposé – aktivieren Sie nur, was Sie benötigen.</div>
+
+      <div class="extras-pair">
+        <!-- 360° Rundgang -->
+        <div class="extras-block" id="extrasBlock360">
+          <div class="extras-block-header" onclick="toggleExtrasBlock('360')">
+            <div class="extras-block-header-left">
+              <span class="extras-block-icon">🔄</span>
+              <div>
+                <div class="extras-block-title">360°-Rundgang</div>
+                <div class="extras-block-desc">Matterport oder ähnlicher Link</div>
+              </div>
+            </div>
+            <label class="extras-toggle" onclick="event.stopPropagation()">
+              <input type="checkbox" id="toggle-360" onchange="toggleExtrasBlock('360', this.checked)">
+              <span class="extras-toggle-slider"></span>
+            </label>
+          </div>
+          <div class="extras-block-body" id="extrasBody360" style="display:none">
+            <label>Link zum 360°-Rundgang</label>
+            <input type="text" id="f-link360" placeholder="https://my.matterport.com/show/?m=…" oninput="updateQr('360')">
+            <div class="extras-qr-row">
+              <div class="extras-qr-preview" id="qrPreview360">
+                <span style="color:rgba(120,130,160,.4);font-size:.65rem;text-align:center;padding:.3rem">QR erscheint nach Link-Eingabe</span>
+              </div>
+              <div class="extras-qr-hint">Der Link wird als QR-Code im Exposé dargestellt – Interessenten können direkt mit dem Smartphone scannen.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- YouTube Video -->
+        <div class="extras-block" id="extrasBlockYT">
+          <div class="extras-block-header" onclick="toggleExtrasBlock('YT')">
+            <div class="extras-block-header-left">
+              <span class="extras-block-icon">▶</span>
+              <div>
+                <div class="extras-block-title">YouTube Video</div>
+                <div class="extras-block-desc">Objektvideo oder Drohnenaufnahme</div>
+              </div>
+            </div>
+            <label class="extras-toggle" onclick="event.stopPropagation()">
+              <input type="checkbox" id="toggle-YT" onchange="toggleExtrasBlock('YT', this.checked)">
+              <span class="extras-toggle-slider"></span>
+            </label>
+          </div>
+          <div class="extras-block-body" id="extrasBodyYT" style="display:none">
+            <label>YouTube-Link</label>
+            <input type="text" id="f-linkYT" placeholder="https://www.youtube.com/watch?v=…" oninput="updateQr('YT')">
+            <div class="extras-qr-row">
+              <div class="extras-qr-preview" id="qrPreviewYT">
+                <span style="color:rgba(120,130,160,.4);font-size:.65rem;text-align:center;padding:.3rem">QR erscheint nach Link-Eingabe</span>
+              </div>
+              <div class="extras-qr-hint">Besucher scannen den QR-Code und gelangen direkt zum Video auf ihrem Smartphone.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sonstiger Text -->
+      <div class="extras-block" id="extrasBlockSonstiges">
+        <div class="extras-block-header" onclick="toggleExtrasBlock('Sonstiges')">
+          <div class="extras-block-header-left">
+            <span class="extras-block-icon">📝</span>
+            <div>
+              <div class="extras-block-title">Sonstiger Text</div>
+              <div class="extras-block-desc">Freier Zusatztext (z. B. Besonderheiten, Hinweise)</div>
+            </div>
+          </div>
+          <label class="extras-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="toggle-Sonstiges" onchange="toggleExtrasBlock('Sonstiges', this.checked)">
+            <span class="extras-toggle-slider"></span>
+          </label>
+        </div>
+        <div class="extras-block-body" id="extrasBodySonstiges" style="display:none">
+          <textarea id="f-sonstigerText" rows="5" placeholder="Freier Text – erscheint auf der letzten Seite des Exposés …"></textarea>
+        </div>
+      </div>
+
+      <!-- Hinweistexte -->
+      <div class="extras-block" id="extrasBlockAgb">
+        <div class="extras-block-header" onclick="toggleExtrasBlock('Agb')">
+          <div class="extras-block-header-left">
+            <span class="extras-block-icon">§</span>
+            <div>
+              <div class="extras-block-title">Hinweistexte</div>
+              <div class="extras-block-desc">Professionelle Hinweise automatisch generieren</div>
+            </div>
+          </div>
+          <label class="extras-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" id="toggle-Agb" onchange="toggleExtrasBlock('Agb', this.checked)">
+            <span class="extras-toggle-slider"></span>
+          </label>
+        </div>
+        <div class="extras-block-body" id="extrasBodyAgb" style="display:none">
+          <p class="hinweis-info-note">Kategorien werden automatisch anhand Ihrer Objektdaten erkannt und können manuell angepasst werden.</p>
+
+          <!-- Generator Panel -->
+          <div class="hinweis-gen-panel">
+            <div class="hinweis-mode-row">
+              <span class="hinweis-mode-label">Umfang:</span>
+              <button class="hinweis-mode-btn active" id="hinweisModeKurz" onclick="setHinweisMode('kurz')">Kurzfassung</button>
+              <button class="hinweis-mode-btn" id="hinweisModeLang" onclick="setHinweisMode('lang')">Langfassung</button>
+            </div>
+            <div class="hinweis-cats-label">Hinweis-Kategorien</div>
+            <div class="hinweis-cat-grid" id="hinweisCatList"></div>
+            <button class="btn-hinweis-gen" onclick="generateHinweisText()">
+              ✦ Hinweistexte generieren
+            </button>
+          </div>
+
+          <!-- Result -->
+          <div class="hinweis-result-bar" id="hinweisResultBar" style="display:none">
+            <span class="hinweis-result-label">Generierter Text (bearbeitbar)</span>
+            <button class="btn-hinweis-ki" id="btnHinweisKi" onclick="polishHinweisText()">✦ KI verbessern</button>
+          </div>
+          <textarea id="f-agbText" rows="8" placeholder="Klicken Sie auf „Hinweistexte generieren" – oder schreiben Sie hier direkt …"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 15: Farbschema -->
+    <div class="step-content" data-step="15">
+      <div class="step-num" id="stepNum15"></div>
+      <div class="step-title">Farbschema</div>
+      <div class="step-desc">Wählen Sie ein Farbpaar – passend zu Ihrer Immobilie. Alle Kombinationen sind druckoptimiert.</div>
+      <div class="color-pair-grid" id="colorPairGrid">
+        <div class="color-pair-card" data-pair="1" onclick="selectColorPair(this)">
+          <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#0f1d40"></div><div class="cp-swatch-secondary" style="background:#c4a43c"></div></div>
+          <div class="cp-name">Navy &amp; Gold</div>
+          <div class="cp-desc">Zeitloser Luxus</div>
+        </div>
+        <div class="color-pair-card" data-pair="2" onclick="selectColorPair(this)">
+          <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#b25450"></div><div class="cp-swatch-secondary" style="background:#c5b98a"></div></div>
+          <div class="cp-name">Terrakotta &amp; Sand</div>
+          <div class="cp-desc">Warm &amp; Editorial</div>
+        </div>
+        <div class="color-pair-card" data-pair="3" onclick="selectColorPair(this)">
+          <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#2a4a35"></div><div class="cp-swatch-secondary" style="background:#e8dcc0"></div></div>
+          <div class="cp-name">Waldgrün &amp; Creme</div>
+          <div class="cp-desc">Natur &amp; Prestige</div>
+        </div>
+        <div class="color-pair-card" data-pair="4" onclick="selectColorPair(this)">
+          <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#2f2f2f"></div><div class="cp-swatch-secondary" style="background:#c9a97a"></div></div>
+          <div class="cp-name">Anthrazit &amp; Champagner</div>
+          <div class="cp-desc">Modern Urban</div>
+        </div>
+        <div class="color-pair-card" data-pair="5" onclick="selectColorPair(this)">
+          <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#6e2535"></div><div class="cp-swatch-secondary" style="background:#ede5d5"></div></div>
+          <div class="cp-name">Bordeaux &amp; Elfenbein</div>
+          <div class="cp-desc">Eleganz &amp; Klassik</div>
+        </div>
+      </div>
+      <p class="error-msg" id="err-colorPair">Bitte wählen Sie ein Farbschema.</p>
+    </div>
+
+    <!-- Step 16: Vorschau -->
+    <div class="step-content" data-step="16">
+      <div class="step-num">Vorschau & Export</div>
+      <div class="step-title">Ihr Exposé</div>
+      <div class="step-desc">Wählen Sie eine Vorlage und überprüfen Sie das Exposé – dann als PDF drucken.</div>
+      <div class="tmpl-toggle">
+        <button class="tmpl-btn active" id="tmplBtnA" onclick="selectTemplate('A')">Template A – Klassisch</button>
+        <button class="tmpl-btn" id="tmplBtnB" onclick="selectTemplate('B')">Template B – Editorial</button>
+        <button class="tmpl-btn" id="tmplBtnC" onclick="selectTemplate('C')">Template C – Modern</button>
+      </div>
+      <div id="preview-output"></div>
+      <div class="preview-actions" style="display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1.5rem">
+        <button class="btn btn-next" onclick="window.print()" style="background:var(--gold)">⎙ Als PDF drucken / speichern</button>
+        <button class="btn btn-back" onclick="openConfirmAll()">↺ Von vorne beginnen</button>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <div class="nav-row">
+      <button class="btn btn-back" id="btnBack" onclick="goBack()">← Zurück</button>
+      <button class="btn-step-reset" id="btnStepReset" onclick="openConfirmStep()">↺ Seite leeren</button>
+      <button class="btn btn-next" id="btnNext" onclick="goNext()">Weiter →</button>
+    </div>
+
+  </div>
+  </div>
+  </div>
+
+  <!-- Stepper rechts -->
+  <div class="stepper-col" id="stepperCol">
+    <div class="drawer-close-btn">
+      <span>Fortschritt</span>
+      <button class="drawer-close-x" onclick="closeStepperDrawer()">✕</button>
+    </div>
+    <div class="steps-row" id="stepsRow"></div>
+  </div>
+</div>
+
+<!-- Startup Modal -->
+<div class="startup-overlay" id="startupOverlay">
+  <div class="startup-modal">
+    <div class="startup-logo">EXPOGEN</div>
+    <div class="startup-tagline">Professionelle Exposés in Minuten</div>
+    <div class="startup-options" id="startupOptions">
+      <!-- buttons rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="closeConfirmOnBg(event)">
+  <div class="confirm-modal">
+    <div class="confirm-modal-icon" id="confirmIcon">⚠️</div>
+    <div class="confirm-modal-title" id="confirmTitle">Zurücksetzen?</div>
+    <div class="confirm-modal-desc" id="confirmDesc"></div>
+    <div class="confirm-modal-actions">
+      <button class="btn-confirm-cancel" onclick="closeConfirm()">Abbrechen</button>
+      <button class="btn-confirm-ok" id="confirmOkBtn" onclick="confirmOk()">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Modal -->
+<div class="ai-modal-overlay" id="aiModalOverlay" onclick="closeAiModalOnBg(event)">
+  <div class="ai-modal">
+    <div class="ai-modal-title">✦ Von KI generieren lassen</div>
+    <div class="ai-modal-desc" id="aiModalDesc">Beschreiben Sie Ihr Objekt kurz.</div>
+    <textarea class="ai-modal-prompt" id="aiModalPrompt" rows="3" placeholder="z. B. Neubau KfW 40, 11 Wohnungen, Leipzig, Kapitalanlage …"></textarea>
+    <div class="ai-modal-actions">
+      <button class="btn-ai-cancel" onclick="closeAiModal()">Abbrechen</button>
+      <button class="btn-ai-generate" id="aiModalBtn" onclick="runAiGenerate()">✦ Generieren</button>
+    </div>
+  </div>
+</div>
+
+<div class="voice-modal-overlay" id="voiceModalOverlay">
+  <div class="voice-modal">
+    <div class="voice-modal-header">
+      <div class="voice-modal-title">🎙 Objekt aufnehmen</div>
+      <button class="voice-modal-close" onclick="closeVoiceModal()">✕</button>
+    </div>
+
+    <!-- Status + Waveform -->
+    <div class="voice-status" id="voiceStatus">Bereit – drücken Sie „Aufnahme starten"</div>
+    <div class="voice-wave" id="voiceWave">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Live-Transkript -->
+    <div class="voice-transcript-label">Transkript (bearbeitbar):</div>
+    <textarea class="voice-transcript" id="voiceTranscriptEl" rows="8"
+      placeholder="Das gesprochene Wort erscheint hier in Echtzeit …"></textarea>
+
+    <!-- Buttons -->
+    <div class="voice-controls">
+      <button class="btn-voice-record" id="voiceBtnRecord" onclick="toggleRecording()">
+        ● Aufnahme starten
+      </button>
+      <button class="btn-voice-generate" id="voiceBtnGenerate" onclick="processVoiceTranscript()" disabled>
+        ✦ Exposé erstellen
+      </button>
+    </div>
+
+    <div class="voice-hint" id="voiceHint">
+      Tipp: Nennen Sie Adresse, Preis, Baujahr, Zimmer, Ausstattung, Lage und alles Besondere am Objekt.
+    </div>
+
+    <!-- Browser-Warnung -->
+    <div class="voice-no-support" id="voiceNoSupport" style="display:none">
+      ⚠️ Ihr Browser unterstützt keine Spracherkennung. Bitte Chrome oder Edge verwenden.
+    </div>
+  </div>
+</div>
+
+<script src="template-a.js"></script>
+<script src="template-b.js"></script>
+<script src="template-c.js"></script>
+<script>
+// ══════════════════════════════════════════════════════
+// STEP DEFINITIONS
+// ══════════════════════════════════════════════════════
+const ALL_STEP_DEFS = [
+  {id:1, label:'Größe',        minSize:'S'},
+  {id:2, label:'Typ',          minSize:'S'},
+  {id:3, label:'Branding',     minSize:'S'},
+  {id:4, label:'Objekt',       minSize:'S'},
+  {id:5, label:'Fotos',        minSize:'S'},
+  {id:6, label:'Daten',        minSize:'S'},
+  {id:7, label:'Beschreibung', minSize:'S'},
+  {id:8, label:'Lage',         minSize:'M', optional:true},
+  {id:9, label:'Standort',     minSize:'L', optional:true},
+  {id:10,label:'Ausstattung',  minSize:'L', optional:true},
+  {id:11,label:'Einheiten',    minSize:'L', optional:true},
+  {id:12,label:'Investment',   minSize:'L', optional:true},
+  {id:13,label:'Kontakt',      minSize:'S'},
+  {id:14,label:'Extras',       minSize:'S', optional:true},
+  {id:15,label:'Farben',       minSize:'S'},
+  {id:16,label:'Vorschau',     minSize:'S'},
+];
+const COLOR_PAIRS = [
+  { id:1, name:'Navy & Gold',            accent:'#0f1d40', secondary:'#c4a43c' },
+  { id:2, name:'Terrakotta & Sand',      accent:'#b25450', secondary:'#c5b98a' },
+  { id:3, name:'Waldgrün & Creme',       accent:'#2a4a35', secondary:'#e8dcc0' },
+  { id:4, name:'Anthrazit & Champagner', accent:'#2f2f2f', secondary:'#c9a97a' },
+  { id:5, name:'Bordeaux & Elfenbein',   accent:'#6e2535', secondary:'#ede5d5' },
+];
+const SIZE_ORDER = ['S','M','L'];
+
+// All steps matching current size/type (ignores disabled)
+function getAllEligibleStepIds() {
+  const size = data.size || 'L';
+  const si = SIZE_ORDER.indexOf(size);
+  let steps = ALL_STEP_DEFS.filter(s => SIZE_ORDER.indexOf(s.minSize) <= si).map(s => s.id);
+  if (data.type !== 'Neubau-Projekt') steps = steps.filter(id => id !== 11);
+  return steps;
+}
+
+// Active steps = eligible minus disabled
+function getActiveStepIds() {
+  const disabled = data.disabledSteps || [];
+  return getAllEligibleStepIds().filter(id => !disabled.includes(id));
+}
+
+function isStepEnabled(id) {
+  return !(data.disabledSteps || []).includes(id);
+}
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let current = 1;
+let data = {};
+let photos = [];
+let confirmCallback = null;
+let aiTargetField = null;
+let aiTargetContext = null;
+let recognition = null;
+let isRecording = false;
+let voiceTranscript = '';
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+function init() {
+  buildStepper();
+  initHighlights();
+  initAusstattungList();
+  initEinheiten();
+  initInvestList();
+  setupDragDrop();
+  showStartupModal();
+}
+
+function showStartupModal() {
+  const hasSaved = !!localStorage.getItem('expogen_data');
+  const opts = document.getElementById('startupOptions');
+  opts.innerHTML = '';
+
+  if (hasSaved) {
+    opts.innerHTML += `
+      <button class="btn-startup btn-startup-resume" onclick="startupResume()">
+        <span class="btn-startup-icon">↩</span>
+        <span class="btn-startup-text"><strong>Letzten Stand fortsetzen</strong><span>Gespeicherte Eingaben laden</span></span>
+      </button>`;
+  }
+  opts.innerHTML += `
+    <button class="btn-startup btn-startup-primary" onclick="startupDemo()">
+      <span class="btn-startup-icon">★</span>
+      <span class="btn-startup-text"><strong>Mit Demodaten starten</strong><span>Beispielobjekt – sofort loslegen</span></span>
+    </button>
+    <button class="btn-startup btn-startup-secondary" onclick="startupEmpty()">
+      <span class="btn-startup-icon">○</span>
+      <span class="btn-startup-text"><strong>Leer starten</strong><span>Alle Felder leer – eigene Daten eingeben</span></span>
+    </button>`;
+
+  document.getElementById('startupOverlay').classList.add('open');
+}
+
+function closeStartupModal() {
+  document.getElementById('startupOverlay').classList.remove('open');
+}
+
+function startupResume() {
+  closeStartupModal();
+  loadFromStorage();
+  showStep(current);
+  updateNav();
+}
+
+function startupDemo() {
+  closeStartupModal();
+  loadDemo();
+}
+
+function startupEmpty() {
+  closeStartupModal();
+  current = 1;
+  showStep(current);
+  updateNav();
+}
+
+// ══════════════════════════════════════════════════════
+// STEPPER
+// ══════════════════════════════════════════════════════
+function buildStepper() {
+  const row = document.getElementById('stepsRow');
+  row.innerHTML = '';
+  const eligible = getAllEligibleStepIds();
+  const disabled = data.disabledSteps || [];
+  let activeNum = 0;
+  eligible.forEach((id, i) => {
+    const def = ALL_STEP_DEFS.find(s => s.id === id);
+    const isOff = disabled.includes(id);
+    if (!isOff) activeNum++;
+    const num = isOff ? '–' : activeNum;
+    const dot = document.createElement('div');
+    dot.className = 'step-dot' + (isOff ? ' step-off' : '');
+    dot.id = `dot-${id}`;
+    const nav = isOff ? '' : `onclick="navigateToStep(${id})"`;
+    const toggle = def.optional
+      ? `<button class="step-toggle" title="${isOff?'Seite einblenden':'Seite ausblenden'}" onclick="toggleStep(${id},event)">${isOff?'+':'×'}</button>`
+      : '';
+    dot.innerHTML = `<div class="dot-circle" ${nav}>${num}</div><div class="dot-label" ${nav}>${def.label}</div>${toggle}`;
+    row.appendChild(dot);
+    if (i < eligible.length - 1) {
+      const line = document.createElement('div');
+      line.className = 'step-line' + (isOff ? ' step-off' : '');
+      line.id = `line-${id}`;
+      row.appendChild(line);
+    }
+  });
+  updateStepNums();
+  updateBurgerLabel();
+}
+
+function updateStepNums() {
+  const active = getActiveStepIds();
+  const total = active.length - 1;
+  active.forEach((id, i) => {
+    const el = document.getElementById(`stepNum${id}`);
+    if (el) {
+      if (id === 15) el.textContent = 'Vorschau & Export';
+      else el.textContent = `Schritt ${i+1} von ${total}`;
+    }
+  });
+}
+
+function updateStepper() {
+  const eligible = getAllEligibleStepIds();
+  const active = getActiveStepIds();
+  const disabled = data.disabledSteps || [];
+  const curIdx = active.indexOf(current);
+  eligible.forEach((id) => {
+    const dot = document.getElementById(`dot-${id}`);
+    if (!dot) return;
+    const isOff = disabled.includes(id);
+    dot.classList.remove('active','done');
+    if (!isOff) {
+      if (id === current) dot.classList.add('active');
+      else if (active.indexOf(id) < curIdx) dot.classList.add('done');
+    }
+    const line = document.getElementById(`line-${id}`);
+    if (line) line.classList.toggle('done', !isOff && active.indexOf(id) < curIdx);
+  });
+}
+
+function navigateToStep(id) {
+  if (!(data.disabledSteps||[]).includes(id)) {
+    collectStep(current);
+    saveToStorage();
+    current = id;
+    showStep(current);
+    updateNav();
+    closeStepperDrawer();
+  }
+}
+
+function toggleStep(id, e) {
+  e.stopPropagation();
+  const disabled = data.disabledSteps || [];
+  const idx = disabled.indexOf(id);
+  if (idx === -1) {
+    disabled.push(id);
+    // if currently on this step, move to next available
+    if (current === id) {
+      const active = getActiveStepIds().filter(s => s !== id);
+      current = active[active.length - 2] || 1; // go to last before Vorschau
+    }
+  } else {
+    disabled.splice(idx, 1);
+  }
+  data.disabledSteps = disabled;
+  saveToStorage();
+  buildStepper();
+  showStep(current);
+  updateNav();
+}
+
+// ══════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════
+// ── MAP GLOBALS ──────────────────────────────────────
+let _lageMap = null;
+let _templateMaps = [];
+
+function onMapToggle() {
+  const on = document.getElementById('f-mapEnabled').checked;
+  data.mapEnabled = on;
+  document.getElementById('lageMapWrap').style.display = on ? '' : 'none';
+  if (on) initLageFormMap();
+}
+
+async function geocodeAdresse() {
+  const addr = data.adresse || val('f-adresse');
+  if (!addr) return;
+  const btn = document.querySelector('#lageMapWrap .btn-add');
+  if (btn) { btn.disabled = true; btn.textContent = 'Suche …'; }
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&limit=1`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'de' } });
+    const json = await res.json();
+    if (json.length > 0) {
+      data.mapLat = parseFloat(json[0].lat);
+      data.mapLon = parseFloat(json[0].lon);
+      saveToStorage();
+      initLageFormMap();
+    }
+  } catch(e) {}
+  if (btn) { btn.disabled = false; btn.textContent = 'Adresse auf Karte suchen'; }
+}
+
+function initLageFormMap() {
+  if (!data.mapLat || !data.mapLon) { geocodeAdresse(); return; }
+  const el = document.getElementById('lageMapPreview');
+  if (!el) return;
+  if (_lageMap) {
+    _lageMap.setView([data.mapLat, data.mapLon], 15);
+    return;
+  }
+  _lageMap = L.map('lageMapPreview').setView([data.mapLat, data.mapLon], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>'
+  }).addTo(_lageMap);
+  L.marker([data.mapLat, data.mapLon]).addTo(_lageMap);
+}
+
+function buildStaticMapHtml(lat, lon, heightMm) {
+  if (!lat || !lon) return '';
+  const zoom = 16;
+  const n = Math.pow(2, zoom);
+  const tileX = (lon + 180) / 360 * n;
+  const latRad = lat * Math.PI / 180;
+  const tileY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+  const cx = Math.floor(tileX);
+  const cy = Math.floor(tileY);
+  const fracX = tileX - cx;
+  const fracY = tileY - cy;
+  const mLeft = ((1 + fracX) / 3 * 100).toFixed(2);
+  const mTop  = ((1 + fracY) / 3 * 100).toFixed(2);
+  const subs = ['a','b','c'];
+  let tiles = '';
+  for (let dy = -1; dy <= 1; dy++)
+    for (let dx = -1; dx <= 1; dx++) {
+      const s = subs[((dx + dy * 3) % 3 + 3) % 3];
+      tiles += `<img src="https://${s}.tile.openstreetmap.org/${zoom}/${cx+dx}/${cy+dy}.png" style="width:100%;height:100%;object-fit:fill;display:block">`;
+    }
+  return `<div style="width:100%;height:${heightMm}mm;position:relative;overflow:hidden;border-radius:4px">
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,33.334%);grid-template-rows:repeat(3,33.334%)">${tiles}</div>
+    <div style="position:absolute;left:${mLeft}%;top:${mTop}%;transform:translate(-50%,-100%);z-index:1;pointer-events:none"><svg width="22" height="30" viewBox="0 0 22 30" fill="none"><path d="M11 0C4.925 0 0 4.925 0 11c0 8.25 11 19 11 19S22 19.25 22 11C22 4.925 17.075 0 11 0z" fill="#e74c3c"/><circle cx="11" cy="11" r="4.5" fill="#fff"/></svg></div>
+    <div style="position:absolute;bottom:3px;right:4px;background:rgba(255,255,255,.75);font-size:7px;padding:1px 3px;border-radius:2px;color:#555;line-height:1.4">© OpenStreetMap</div>
+  </div>`;
+}
+
+function showStep(id) {
+  document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+  const el = document.querySelector(`.step-content[data-step="${id}"]`);
+  if (el) el.classList.add('active');
+  updateStepper();
+  if (id === 8 && data.mapEnabled) setTimeout(initLageFormMap, 150);
+  if (id === 15) buildPreview();
+  updateBurgerLabel();
+}
+
+function updateNav() {
+  const active = getActiveStepIds();
+  const idx = active.indexOf(current);
+  document.getElementById('btnBack').style.visibility = idx === 0 ? 'hidden' : 'visible';
+  const btn = document.getElementById('btnNext');
+  const sr = document.getElementById('btnStepReset');
+  if (current === 15) {
+    btn.style.display = 'none';
+    if (sr) sr.style.display = 'none';
+  } else {
+    btn.style.display = '';
+    btn.textContent = (idx === active.length - 2) ? 'Vorschau →' : 'Weiter →';
+    if (sr) sr.style.display = '';
+  }
+}
+
+function goNext() {
+  if (!validateStep(current)) return;
+  collectStep(current);
+  saveToStorage();
+  const active = getActiveStepIds();
+  const idx = active.indexOf(current);
+  if (idx < active.length - 1) {
+    current = active[idx + 1];
+    showStep(current); updateNav();
+  }
+}
+
+function goBack() {
+  const active = getActiveStepIds();
+  const idx = active.indexOf(current);
+  if (idx > 0) { current = active[idx - 1]; showStep(current); updateNav(); }
+}
+
+// ══════════════════════════════════════════════════════
+// VALIDATION
+// ══════════════════════════════════════════════════════
+function validateStep(id) {
+  clearErrors();
+  if (id === 1 && !data.size)           { show('err-groesse');  return false; }
+  if (id === 2 && !data.type)           { show('err-type');     return false; }
+  if (id === 4 && !val('f-titel'))      { show('err-titel');    return false; }
+  if (id === 4 && !val('f-adresse'))    { show('err-adresse');  return false; }
+  if (id === 7 && !val('f-beschreibung')) { show('err-beschr'); return false; }
+  if (id === 13 && !val('f-name'))      { show('err-name');     return false; }
+  if (id === 14 && !data.colorPair)    { show('err-colorPair'); return false; }
+  return true;
+}
+function clearErrors(){ document.querySelectorAll('.error-msg').forEach(e=>e.classList.remove('show')); }
+function show(id){ const e=document.getElementById(id); if(e) e.classList.add('show'); }
+function val(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
+
+// ══════════════════════════════════════════════════════
+// COLLECT
+// ══════════════════════════════════════════════════════
+function collectStep(id) {
+  if (id===3){ data.brandFirma=val('f-brandFirma'); }
+  if (id===4){ data.titel=val('f-titel'); data.untertitel=val('f-untertitel'); data.adresse=val('f-adresse'); data.preis=val('f-preis'); data.preisDetail=val('f-preisDetail'); }
+  if (id===6){ ['baujahr','zustand','verfuegbar','hausgeld','denkmal','einheitenAnz','wohnflaeche','gesamtflaeche','zimmer','energiestandard','heizung','heizungsart','energieausweis','energieklasse','energiekennwert','energieausweisTyp','kaeuferp','weitereKosten'].forEach(k=>{ data[k]=val('f-'+k); }); data.stellplaetzeTyp=[...document.querySelectorAll('.stellplatz-typ:checked')].map(cb=>cb.value).join(', '); data.stellplaetzeAnz=val('f-stellplaetze-anz'); data.stellplaetzeKosten=val('f-stellplaetze-kosten'); }
+  if (id===7){ data.beschreibung=val('f-beschreibung'); data.highlights=[...document.querySelectorAll('.hl-input')].map(i=>i.value.trim()).filter(Boolean); }
+  if (id===8){ data.lage=val('f-lage'); data.mapEnabled=document.getElementById('f-mapEnabled')?.checked||false; }
+  if (id===9){ data.stadtbeschr=val('f-stadtbeschr'); }
+  if (id===10){ data.ausstattung=val('f-ausstattung'); data.ausstattungList=[...document.querySelectorAll('.aus-input')].map(i=>i.value.trim()).filter(Boolean); }
+  if (id===11){ collectEinheiten(); }
+  if (id===12){ data.investment=val('f-investment'); data.investHighlights=[...document.querySelectorAll('.inv-input')].map(i=>i.value.trim()).filter(Boolean); }
+  if (id===13){ data.name=val('f-name'); data.tel=val('f-tel'); data.email=val('f-email'); data.firma=val('f-firma'); data.kontaktAdresse=val('f-kontaktAdresse'); }
+  if (id===14){ data.link360=val('f-link360'); data.linkYT=val('f-linkYT'); data.sonstigerText=val('f-sonstigerText'); data.agbText=val('f-agbText'); data.extras360Enabled=document.getElementById('toggle-360')?.checked||false; data.extrasYTEnabled=document.getElementById('toggle-YT')?.checked||false; data.extrasSonstigesEnabled=document.getElementById('toggle-Sonstiges')?.checked||false; data.extrasAgbEnabled=document.getElementById('toggle-Agb')?.checked||false; }
+}
+
+function collectEinheiten() {
+  const rows = document.querySelectorAll('#einheitenBody tr');
+  data.einheiten = [...rows].map(r => ({
+    typ: r.querySelector('.ei-typ').value.trim(),
+    anzahl: r.querySelector('.ei-anz').value.trim(),
+    flaeche: r.querySelector('.ei-fl').value.trim(),
+    preis: r.querySelector('.ei-pr').value.trim(),
+    besonderheit: r.querySelector('.ei-bs').value.trim(),
+  })).filter(e => e.typ || e.flaeche);
+}
+
+// ══════════════════════════════════════════════════════
+// SELECTIONS
+// ══════════════════════════════════════════════════════
+function selectGroesse(card) {
+  document.querySelectorAll('.groesse-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  data.size = card.dataset.size;
+  buildStepper(); clearErrors();
+}
+
+function selectType(card) {
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  data.type = card.dataset.type;
+  buildStepper(); clearErrors();
+}
+
+function selectColorPair(card) {
+  document.querySelectorAll('.color-pair-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  data.colorPair = parseInt(card.dataset.pair);
+  clearErrors();
+}
+
+function getColorPair() {
+  const id = data.colorPair || 2;
+  return COLOR_PAIRS.find(p=>p.id===id) || COLOR_PAIRS[1];
+}
+
+function resetColorPairSelection() {
+  document.querySelectorAll('.color-pair-card').forEach(c=>c.classList.remove('selected'));
+}
+
+// ══════════════════════════════════════════════════════
+// EXTRAS
+// ══════════════════════════════════════════════════════
+function toggleExtrasBlock(key, forcedState) {
+  const cb = document.getElementById('toggle-' + key);
+  const body = document.getElementById('extrasBody' + key);
+  const block = document.getElementById('extrasBlock' + key);
+  if (!cb || !body || !block) return;
+  const enabled = forcedState !== undefined ? forcedState : cb.checked;
+  if (forcedState !== undefined) cb.checked = enabled;
+  body.style.display = enabled ? '' : 'none';
+  block.classList.toggle('active', enabled);
+  if (enabled && (key === '360' || key === 'YT')) updateQr(key);
+  if (enabled && key === 'Agb') renderHinweisCats();
+}
+
+function updateQr(key) {
+  const inputId = key === '360' ? 'f-link360' : 'f-linkYT';
+  const previewId = 'qrPreview' + key;
+  const url = document.getElementById(inputId)?.value?.trim();
+  const preview = document.getElementById(previewId);
+  if (!preview) return;
+  if (!url) {
+    preview.innerHTML = '<span style="color:rgba(120,130,160,.4);font-size:.65rem;text-align:center;padding:.3rem">QR erscheint nach Link-Eingabe</span>';
+    return;
+  }
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+  preview.innerHTML = '<img src="' + qrUrl + '" alt="QR-Code" style="width:100%;height:100%;object-fit:contain">';
+}
+
+// ══════════════════════════════════════════════════════
+// HINWEIS GENERATOR
+// Architektur: HINWEIS_CATEGORIES → regelbasierte Auswahl →
+// Template-Assemblierung (sofort) + optionale KI-Politur
+// ══════════════════════════════════════════════════════
+let hinweisModeSelected = 'kurz';
+let hinweisManualOverrides = {}; // cat.id → true/false
+
+// ── Ebene 1+3: Kategorien mit Regeln und Textbausteinen ──
+// Neue Kategorien können jederzeit am Ende des Arrays ergänzt werden.
+// Jede Kategorie hat: id, label, rule(data)→bool, short, long
+const HINWEIS_CATEGORIES = [
+  {
+    id: 'haftung',
+    label: 'Allgemeiner Haftungshinweis',
+    rule: () => true,
+    short: 'Alle Angaben in diesem Exposé beruhen auf Informationen des Eigentümers bzw. Auftraggebers. Eine Gewähr für die Richtigkeit und Vollständigkeit wird nicht übernommen.',
+    long: 'Alle in diesem Exposé enthaltenen Informationen, Angaben und Beschreibungen basieren auf Mitteilungen des Eigentümers bzw. Auftraggebers und wurden nicht in allen Punkten unabhängig geprüft. Der Makler übernimmt keine Haftung für die Richtigkeit, Vollständigkeit oder Aktualität der enthaltenen Angaben. Maßgeblich sind ausschließlich die Inhalte des notariellen Kaufvertrages sowie die offiziellen Unterlagen des Objekts.'
+  },
+  {
+    id: 'angaben',
+    label: 'Verbindlichkeit der Unterlagen',
+    rule: () => true,
+    short: 'Maßgeblich sind ausschließlich die im notariellen Kaufvertrag vereinbarten Regelungen sowie die offiziellen Unterlagen des Objekts.',
+    long: 'Dieses Exposé dient der unverbindlichen Vorinformation und ersetzt nicht die Einsichtnahme in offizielle Unterlagen wie Grundbuchauszug, Baugenehmigungen, Teilungserklärung, Gemeinschaftsordnung oder Hausgeldabrechnungen. Die Regelungen des notariellen Kaufvertrages sind in jedem Fall verbindlich und gehen den Angaben dieses Exposés vor.'
+  },
+  {
+    id: 'verfuegbar',
+    label: 'Verfügbarkeit / Zwischenverkauf',
+    rule: () => true,
+    short: 'Das Angebot ist freibleibend. Zwischenverkauf, Zwischenvermietung sowie Preisanpassungen bleiben ausdrücklich vorbehalten.',
+    long: 'Das vorliegende Angebot ist freibleibend und unverbindlich. Der Verkäufer behält sich Zwischenverkauf, Zwischenvermietung sowie jederzeit Änderungen des Angebotspreises vor. Ein Anspruch auf Abschluss eines Kaufvertrages entsteht erst durch die notarielle Beurkundung.'
+  },
+  {
+    id: 'flaeche',
+    label: 'Flächenangaben',
+    rule: d => !!(d.wohnflaeche || d.gesamtflaeche),
+    short: 'Flächenangaben sind Näherungswerte gemäß Angaben des Eigentümers. Abweichungen gegenüber offiziellen Messungen sind möglich und begründen keine Haftung.',
+    long: 'Die angegebenen Wohn-, Nutz- und Grundstücksflächen wurden vom Eigentümer mitgeteilt und nicht eigenständig vermessen. Geringfügige Abweichungen gegenüber amtlichen Messungen, Katasterunterlagen oder einer neuen Wohnflächenberechnung nach WoFlV sind möglich und begründen keinen Anspruch auf Kaufpreisminderung oder Schadenersatz.'
+  },
+  {
+    id: 'provision',
+    label: 'Provision / Maklercourtage',
+    rule: d => !!(d.kaeuferp || d.preisDetail || d.preis),
+    short: 'Sofern eine Maklerprovision anfällt, ist diese im Exposé gesondert ausgewiesen und nach Abschluss des notariellen Kaufvertrages fällig.',
+    long: 'Die Maklerprovision (Courtage) ist, soweit im vorliegenden Exposé ausgewiesen, nach Abschluss des notariellen Kaufvertrages zur Zahlung fällig. Bei beidseitiger Courtagevereinbarung gilt die gesetzliche Regelung gemäß § 656c BGB. Die ausgewiesene Provision versteht sich inklusive der gesetzlichen Mehrwertsteuer, sofern nicht anders angegeben.'
+  },
+  {
+    id: 'energie',
+    label: 'Energieausweis',
+    rule: d => !!(d.energieausweis || d.energieklasse || d.energiekennwert || d.energieausweisTyp),
+    short: 'Angaben zur Energieeffizienz basieren auf dem vorliegenden Energieausweis, der auf Anfrage zur Einsicht bereitgestellt wird.',
+    long: 'Für das Objekt liegt ein Energieausweis gemäß Gebäudeenergiegesetz (GEG) vor. Die enthaltenen Energiekennwerte sowie die Effizienzklasse wurden diesem Ausweis entnommen. Der Energieausweis kann im Rahmen einer Besichtigung eingesehen werden. Tatsächliche Verbrauchswerte können je nach Nutzungsverhalten der Bewohner abweichen.'
+  },
+  {
+    id: 'neubau',
+    label: 'Neubau / Projektvertrieb',
+    rule: d => d.type === 'Neubau-Projekt' || /neubau|kfw/i.test(d.energiestandard || ''),
+    short: 'Technische Angaben, Ausstattungsdetails und Plandarstellungen sind unverbindlich. Änderungen bleiben bis zur Beurkundung vorbehalten.',
+    long: 'Bei Neubauprojekten und Projektverkäufen sind alle technischen Angaben, Grundrissdarstellungen, Ausstattungsbeschreibungen und Visualisierungen als unverbindlich zu verstehen. Änderungen der Baubeschreibung, der Ausstattung sowie technischer Details bleiben dem Bauträger bis zur notariellen Beurkundung ausdrücklich vorbehalten. Maßgeblich ist ausschließlich die vertraglich vereinbarte Baubeschreibung.'
+  },
+  {
+    id: 'visualisierungen',
+    label: 'Visualisierungen / Beispielbilder',
+    rule: d => d.type === 'Neubau-Projekt',
+    short: 'Enthaltene Visualisierungen und Darstellungen dienen der unverbindlichen Veranschaulichung und entsprechen nicht zwingend der tatsächlichen Ausführung.',
+    long: 'Enthaltene Visualisierungen, Renderings, Grundrissdarstellungen und Beispielabbildungen dienen ausschließlich der illustrativen Veranschaulichung. Sie begründen keinen Anspruch auf eine bestimmte Ausführung oder Ausstattung und können von der tatsächlichen Umsetzung abweichen. Maßgeblich sind die vertraglich vereinbarten Leistungen und die genehmigte Baubeschreibung.'
+  },
+  {
+    id: 'kapitalanlage',
+    label: 'Kapitalanlage / Mietrendite',
+    rule: d => d.type === 'Kapitalanlage' || !!(d.investment) || !!(d.investHighlights?.length),
+    short: 'Angenommene Mieteinnahmen und Renditeangaben dienen der Orientierung und sind nicht garantiert. Tatsächliche Erträge können abweichen.',
+    long: 'Angaben zu Mieteinnahmen, Renditen, Mietpotenzial und wirtschaftlicher Entwicklung sind Prognosewerte und unverbindlich. Sie basieren auf aktuellen Marktvergleichen oder Angaben des Eigentümers und stellen keine Garantie für zukünftige Erträge dar. Leerstandsrisiken, Mietausfälle sowie Wertentwicklungen am Immobilienmarkt können nicht zuverlässig prognostiziert werden.'
+  },
+  {
+    id: 'steuer',
+    label: 'Steuerliche Hinweise',
+    rule: d => /steuer|afa|abschreib|denkmal/i.test([d.investment||'', ...(d.investHighlights||[])].join(' ')),
+    short: 'Steuerliche Hinweise sind unverbindlich und ersetzen keine individuelle Beratung durch einen qualifizierten Steuerberater.',
+    long: 'Steuerliche Ausführungen – insbesondere zu Abschreibungsmöglichkeiten, Denkmalschutzabschreibungen oder sonstigen steuerlichen Vorteilen – sind allgemeiner Natur und unverbindlich. Sie ersetzen keine individuelle Beratung durch einen qualifizierten Steuerberater. Die steuerliche Behandlung hängt von den persönlichen Verhältnissen des Käufers ab und kann sich durch Gesetzesänderungen jederzeit verändern.'
+  },
+  {
+    id: 'finanzierung',
+    label: 'Finanzierung / Fördermittel',
+    rule: d => /kfw|förder|finanzier/i.test([d.energiestandard||'', d.investment||'', d.beschreibung||''].join(' ')),
+    short: 'Hinweise zu Fördermitteln oder Finanzierungsmöglichkeiten sind unverbindlich. Verbindliche Auskünfte erteilt Ihre Bank oder ein Finanzierungsberater.',
+    long: 'Angaben zu Förderprogrammen, KfW-Darlehen und sonstigen Finanzierungsmöglichkeiten sind allgemeiner Natur und ohne Gewähr. Förderbedingungen und -konditionen können sich ändern. Für verbindliche Aussagen und individuelle Finanzierungsberatung wenden Sie sich bitte an Ihre Bank oder einen unabhängigen Finanzierungsberater.'
+  },
+];
+
+// ── Ebene 2: Regelbasierte Auswahl ──
+function getActiveHinweisIds() {
+  return HINWEIS_CATEGORIES
+    .filter(cat => (cat.id in hinweisManualOverrides)
+      ? hinweisManualOverrides[cat.id]
+      : cat.rule(data))
+    .map(cat => cat.id);
+}
+
+function setHinweisMode(mode) {
+  hinweisModeSelected = mode;
+  document.getElementById('hinweisModeKurz')?.classList.toggle('active', mode === 'kurz');
+  document.getElementById('hinweisModeLang')?.classList.toggle('active', mode === 'lang');
+}
+
+function onHinweisCatChange(id, checked) {
+  hinweisManualOverrides[id] = checked;
+}
+
+// Render category checkboxes (called when block is opened)
+function renderHinweisCats() {
+  const list = document.getElementById('hinweisCatList');
+  if (!list) return;
+  list.innerHTML = HINWEIS_CATEGORIES.map(cat => {
+    const autoActive = cat.rule(data);
+    const checked = (cat.id in hinweisManualOverrides)
+      ? hinweisManualOverrides[cat.id]
+      : autoActive;
+    const autoLabel = autoActive && !(cat.id in hinweisManualOverrides)
+      ? '<span class="hinweis-cat-auto">auto</span>' : '';
+    return `<label class="hinweis-cat-item">
+      <input type="checkbox" ${checked ? 'checked' : ''} onchange="onHinweisCatChange('${cat.id}',this.checked)">
+      <span class="hinweis-cat-name">${cat.label}</span>${autoLabel}
+    </label>`;
+  }).join('');
+}
+
+// ── Ebene 3+4: Assemblierung ──
+function generateHinweisText() {
+  // Collect latest data before evaluating rules
+  collectStep(4); collectStep(6); collectStep(7); collectStep(12);
+  renderHinweisCats();
+
+  const activeIds = getActiveHinweisIds();
+  const blocks = HINWEIS_CATEGORIES
+    .filter(cat => activeIds.includes(cat.id))
+    .map(cat => hinweisModeSelected === 'lang' ? cat.long : cat.short);
+
+  const text = blocks.join('\n\n');
+  const ta = document.getElementById('f-agbText');
+  if (ta) ta.value = text;
+
+  // Show result bar
+  const bar = document.getElementById('hinweisResultBar');
+  if (bar) bar.style.display = 'flex';
+
+  // Auto-enable toggle if not yet active
+  const cb = document.getElementById('toggle-Agb');
+  if (cb && !cb.checked) { cb.checked = true; toggleExtrasBlock('Agb', true); }
+}
+
+// Optional: KI-Politur via pollinations.ai (wie andere ✦ KI-Buttons)
+async function polishHinweisText() {
+  const ta = document.getElementById('f-agbText');
+  if (!ta?.value.trim()) return;
+  const btn = document.getElementById('btnHinweisKi');
+  if (btn) { btn.textContent = '⟳ …'; btn.disabled = true; }
+
+  const sys = 'Du bist ein professioneller Immobilienmarketing-Texter für Deutschland. Überarbeite die folgenden Hinweisbausteine: Fasse sie sprachlich zusammen, vermeide Wiederholungen, behalte den sachlichen und seriösen Ton bei. Ausgabe: nur der fertige Text, kein Kommentar.';
+  try {
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role:'system', content:sys }, { role:'user', content:ta.value.trim() }],
+        model: 'openai', seed: Math.floor(Math.random()*9999)
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    ta.value = (await res.text()).trim();
+  } catch(err) {
+    alert('KI-Überarbeitung fehlgeschlagen: ' + err.message);
+  } finally {
+    if (btn) { btn.textContent = '✦ KI verbessern'; btn.disabled = false; }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// LOGO
+// ══════════════════════════════════════════════════════
+function handleLogoUpload(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    data.brandLogoSrc = e.target.result;
+    const img = document.getElementById('logoPreviewImg');
+    img.src = e.target.result; img.style.display = 'block';
+    document.getElementById('logoPlaceholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ══════════════════════════════════════════════════════
+// PHOTOS
+// ══════════════════════════════════════════════════════
+function setupDragDrop() {
+  const zone = document.getElementById('dropZone');
+  zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('dragover');});
+  zone.addEventListener('dragleave', ()=>zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e=>{e.preventDefault();zone.classList.remove('dragover');handlePhotoFiles(e.dataTransfer.files);});
+}
+
+function handlePhotoFiles(files) {
+  const arr = Array.from(files).slice(0, 20 - photos.length);
+  arr.forEach(file=>{
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => { photos.push({src: e.target.result, caption: ''}); renderPhotoGrid(); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPhotoGrid() {
+  const grid = document.getElementById('photoGrid');
+  grid.innerHTML = '';
+  photos.forEach((p,i)=>{
+    const item = document.createElement('div');
+    item.className = 'photo-item';
+    const thumb = document.createElement('div');
+    thumb.className = 'photo-thumb';
+    thumb.innerHTML = `<img src="${p.src}" alt="Foto ${i+1}"><button class="del-photo" onclick="removePhoto(${i})">×</button>`;
+    const cap = document.createElement('input');
+    cap.className = 'photo-caption-input';
+    cap.placeholder = 'Beschreibung (optional)';
+    cap.value = p.caption || '';
+    cap.oninput = () => { photos[i].caption = cap.value; };
+    item.appendChild(thumb);
+    item.appendChild(cap);
+    grid.appendChild(item);
+  });
+  document.getElementById('photoCount').textContent = `${photos.length} / 20 Fotos`;
+  document.getElementById('dropZone').style.display = photos.length >= 20 ? 'none' : '';
+}
+
+function removePhoto(idx) { photos.splice(idx,1); renderPhotoGrid(); }
+
+// ══════════════════════════════════════════════════════
+// DYNAMIC LISTS
+// ══════════════════════════════════════════════════════
+function initHighlights() {
+  if (!document.getElementById('highlightList').children.length) {
+    addHighlight(); addHighlight(); addHighlight();
+  }
+}
+function addHighlight(v='') {
+  const list = document.getElementById('highlightList');
+  const uid = 'hl-'+Date.now()+Math.random().toString(36).slice(2,5);
+  const item = document.createElement('div'); item.className='list-item';
+  item.innerHTML=`<input type="text" class="hl-input" id="${uid}" placeholder="Highlight …" value="${escHtml(v)}">
+    <button class="btn-ai" style="padding:.28rem .75rem;font-size:.68rem" onclick="openAiModal('${uid}','Highlight')">✦</button>
+    <button class="btn-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(item);
+}
+
+function initAusstattungList() {
+  if (!document.getElementById('ausstattungList').children.length) {
+    addAusstattung(); addAusstattung();
+  }
+}
+function addAusstattung(v='') {
+  const list = document.getElementById('ausstattungList');
+  const item = document.createElement('div'); item.className='list-item';
+  item.innerHTML=`<input type="text" class="aus-input" placeholder="Ausstattungsmerkmal …" value="${escHtml(v)}">
+    <button class="btn-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(item);
+}
+
+function initInvestList() {
+  if (!document.getElementById('investList').children.length) {
+    addInvest(); addInvest();
+  }
+}
+function addInvest(v='') {
+  const list = document.getElementById('investList');
+  const item = document.createElement('div'); item.className='list-item';
+  item.innerHTML=`<input type="text" class="inv-input" placeholder="Investment-Vorteil …" value="${escHtml(v)}">
+    <button class="btn-remove" onclick="this.parentElement.remove()">×</button>`;
+  list.appendChild(item);
+}
+
+function initEinheiten() {
+  if (!document.getElementById('einheitenBody').children.length) {
+    addEinheit('1-Zimmer-Wohnung','','','','');
+    addEinheit('2-Zimmer-Wohnung','','','','');
+  }
+}
+function addEinheit(typ='',anz='',fl='',pr='',bs='') {
+  const body = document.getElementById('einheitenBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML=`<td><input type="text" class="ei-typ" placeholder="Typ" value="${escHtml(typ)}"></td>
+    <td><input type="text" class="ei-anz" placeholder="Anzahl" value="${escHtml(anz)}"></td>
+    <td><input type="text" class="ei-fl" placeholder="Fläche" value="${escHtml(fl)}"></td>
+    <td><input type="text" class="ei-pr" placeholder="Preis" value="${escHtml(pr)}"></td>
+    <td><input type="text" class="ei-bs" placeholder="Besonderheit" value="${escHtml(bs)}"></td>
+    <td class="del-col"><button class="btn-remove" onclick="this.closest('tr').remove()">×</button></td>`;
+  body.appendChild(tr);
+}
+
+// ══════════════════════════════════════════════════════
+// CONFIRM MODAL
+// ══════════════════════════════════════════════════════
+function openConfirm(icon,title,desc,fn,warn) {
+  confirmCallback=fn;
+  document.getElementById('confirmIcon').textContent=icon;
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmDesc').textContent=desc;
+  const ok=document.getElementById('confirmOkBtn');
+  ok.className=warn?'btn-confirm-ok warn':'btn-confirm-ok';
+  ok.textContent=warn?'Leeren':'Alles löschen';
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm(){ document.getElementById('confirmOverlay').classList.remove('open'); confirmCallback=null; }
+function closeConfirmOnBg(e){ if(e.target===document.getElementById('confirmOverlay')) closeConfirm(); }
+function confirmOk(){ if(confirmCallback) confirmCallback(); closeConfirm(); }
+
+function openConfirmAll() {
+  openConfirm('⚠️','Alles zurücksetzen?','Alle Eingaben aus allen Schritten werden gelöscht.',doResetAll,false);
+}
+function openConfirmStep() {
+  if (current===15) return;
+  const label = ALL_STEP_DEFS.find(s=>s.id===current)?.label || `Schritt ${current}`;
+  openConfirm('↺',`„${label}" leeren?`,`Nur die Eingaben dieses Schritts werden gelöscht.`,resetCurrentStep,true);
+}
+
+function doResetAll() {
+  localStorage.removeItem('expogen_data'); localStorage.removeItem('expogen_step'); localStorage.removeItem('expogen_photos');
+  data={}; photos=[]; current=1;
+  document.querySelectorAll('input:not([type=file]),textarea').forEach(el=>el.value='');
+  document.querySelectorAll('.groesse-card,.type-card,.color-pair-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('highlightList').innerHTML='';
+  document.getElementById('ausstattungList').innerHTML='';
+  document.getElementById('einheitenBody').innerHTML='';
+  document.getElementById('investList').innerHTML='';
+  document.getElementById('photoGrid').innerHTML='';
+  document.getElementById('photoCount').textContent='0 / 20 Fotos';
+  document.getElementById('dropZone').style.display='';
+  document.getElementById('logoPreviewImg').style.display='none';
+  document.getElementById('logoPlaceholder').style.display='';
+  initHighlights(); initAusstattungList(); initEinheiten(); initInvestList();
+  buildStepper(); showStep(1); updateNav();
+}
+
+const STEP_RESET_MAP = {1:'Größe',2:'Typ',3:'Branding',4:'Objekt',5:'Fotos',6:'Daten',7:'Beschreibung',8:'Lage',9:'Standort',10:'Ausstattung',11:'Einheiten',12:'Investment',13:'Kontakt',14:'Extras'};
+function resetCurrentStep() {
+  switch(current) {
+    case 1: delete data.size; document.querySelectorAll('.groesse-card').forEach(c=>c.classList.remove('selected')); buildStepper(); break;
+    case 2: delete data.type; document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected')); buildStepper(); break;
+    case 3: setVal('f-brandFirma',''); data.brandFirma=''; data.brandLogoSrc=null; document.getElementById('logoPreviewImg').style.display='none'; document.getElementById('logoPlaceholder').style.display=''; break;
+    case 4: ['f-titel','f-untertitel','f-adresse','f-preis','f-preisDetail'].forEach(id=>setVal(id,'')); break;
+    case 5: photos=[]; renderPhotoGrid(); localStorage.removeItem('expogen_photos'); break;
+    case 6: ['baujahr','zustand','verfuegbar','hausgeld','denkmal','einheitenAnz','wohnflaeche','gesamtflaeche','zimmer','energiestandard','heizung','heizungsart','energieausweis','energieklasse','energiekennwert','energieausweisTyp','kaeuferp','weitereKosten'].forEach(k=>{setVal('f-'+k,''); delete data[k];}); document.querySelectorAll('.stellplatz-typ').forEach(cb=>cb.checked=false); setVal('f-stellplaetze-anz',''); setVal('f-stellplaetze-kosten',''); data.stellplaetzeTyp=''; data.stellplaetzeAnz=''; data.stellplaetzeKosten=''; break;
+    case 7: setVal('f-beschreibung',''); document.getElementById('highlightList').innerHTML=''; data.highlights=[]; initHighlights(); break;
+    case 8: setVal('f-lage',''); delete data.lage; break;
+    case 9: setVal('f-stadtbeschr',''); delete data.stadtbeschr; break;
+    case 10: setVal('f-ausstattung',''); document.getElementById('ausstattungList').innerHTML=''; data.ausstattungList=[]; initAusstattungList(); break;
+    case 11: document.getElementById('einheitenBody').innerHTML=''; data.einheiten=[]; initEinheiten(); break;
+    case 12: setVal('f-investment',''); document.getElementById('investList').innerHTML=''; data.investHighlights=[]; initInvestList(); break;
+    case 13: ['f-name','f-tel','f-email','f-firma','f-kontaktAdresse'].forEach(id=>setVal(id,'')); break;
+    case 14: setVal('f-link360',''); setVal('f-linkYT',''); setVal('f-sonstigerText',''); setVal('f-agbText','');
+      ['360','YT','Sonstiges','Agb'].forEach(k=>{ const cb=document.getElementById('toggle-'+k); if(cb){cb.checked=false;} const b=document.getElementById('extrasBody'+k); if(b) b.style.display='none'; const bl=document.getElementById('extrasBlock'+k); if(bl) bl.classList.remove('active'); const qr=document.getElementById('qrPreview'+k); if(qr) qr.innerHTML='<span style="color:rgba(120,130,160,.4);font-size:.65rem;text-align:center;padding:.3rem">QR erscheint nach Link-Eingabe</span>'; });
+      delete data.link360; delete data.linkYT; delete data.sonstigerText; delete data.agbText; delete data.extras360Enabled; delete data.extrasYTEnabled; delete data.extrasSonstigesEnabled; delete data.extrasAgbEnabled;
+      hinweisManualOverrides={}; hinweisModeSelected='kurz'; setHinweisMode('kurz');
+      const hbar=document.getElementById('hinweisResultBar'); if(hbar) hbar.style.display='none'; break;
+    case 15: delete data.colorPair; resetColorPairSelection(); break;
+  }
+  clearErrors(); saveToStorage();
+}
+
+// ══════════════════════════════════════════════════════
+// AI MODAL
+// ══════════════════════════════════════════════════════
+function openAiModal(fieldId, context) {
+  aiTargetField = fieldId;
+  aiTargetContext = context;
+  document.getElementById('aiModalDesc').textContent = `Beschreiben Sie Ihr Objekt – die KI erstellt: ${context}.`;
+  document.getElementById('aiModalPrompt').value = '';
+  document.getElementById('aiModalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('aiModalPrompt').focus(), 100);
+}
+function closeAiModal() {
+  document.getElementById('aiModalOverlay').classList.remove('open');
+  aiTargetField = null;
+  aiTargetContext = null;
+}
+function closeAiModalOnBg(e) { if (e.target === document.getElementById('aiModalOverlay')) closeAiModal(); }
+async function runAiGenerate() {
+  const prompt = document.getElementById('aiModalPrompt').value.trim();
+  if (!prompt) return;
+  const btn = document.getElementById('aiModalBtn');
+  btn.textContent = '⟳ …';
+  btn.disabled = true;
+
+  const systemPrompt = 'Du bist ein professioneller Immobilienmarketing-Texter. Schreibe ausschließlich auf Deutsch. Erstelle überzeugenden, professionellen Text für ein deutsches Immobilien-Exposé. Schreibe direkt den Text ohne Überschriften oder Erklärungen.';
+  const userMsg = `Erstelle für ein Immobilien-Exposé: ${aiTargetContext}.\n\nObjekt-Info vom Nutzer: ${prompt}`;
+
+  try {
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userMsg }
+        ],
+        model: 'openai',
+        seed: Math.floor(Math.random() * 9999)
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const f = document.getElementById(aiTargetField);
+    if (f) f.value = text.trim();
+    closeAiModal();
+  } catch (err) {
+    alert('KI-Generierung fehlgeschlagen: ' + err.message + '\n\nBitte Internetverbindung prüfen.');
+  } finally {
+    btn.textContent = '✦ Generieren';
+    btn.disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════════════
+function saveToStorage() {
+  try { localStorage.setItem('expogen_data',JSON.stringify(data)); localStorage.setItem('expogen_step',current); } catch(e){}
+  try { localStorage.setItem('expogen_photos',JSON.stringify(photos)); } catch(e){}
+}
+function loadFromStorage() {
+  try {
+    const d=localStorage.getItem('expogen_data');
+    const s=localStorage.getItem('expogen_step');
+    const ph=localStorage.getItem('expogen_photos');
+    if(ph){ photos=JSON.parse(ph); renderPhotoGrid(); }
+    if(d) {
+      data=JSON.parse(d);
+      if(data.size){ const c=document.querySelector(`.groesse-card[data-size="${data.size}"]`); if(c) c.classList.add('selected'); }
+      if(data.type){ const c=document.querySelector(`.type-card[data-type="${data.type}"]`); if(c) c.classList.add('selected'); }
+      if(data.colorPair){ const c=document.querySelector(`.color-pair-card[data-pair="${data.colorPair}"]`); if(c) c.classList.add('selected'); }
+      const fields=['brandFirma','titel','untertitel','adresse','preis','preisDetail','baujahr','zustand','verfuegbar','hausgeld','denkmal','einheitenAnz','wohnflaeche','gesamtflaeche','zimmer','energiestandard','heizung','heizungsart','energieausweis','energieklasse','energiekennwert','energieausweisTyp','kaeuferp','weitereKosten','beschreibung','lage','stadtbeschr','ausstattung','investment','name','tel','email','firma','kontaktAdresse','link360','linkYT','sonstigerText','agbText'];
+      fields.forEach(k=>{ if(data[k]) setVal('f-'+k, data[k]); });
+      if(data.stellplaetzeTyp){ data.stellplaetzeTyp.split(', ').forEach(v=>{ const cb=document.querySelector(`.stellplatz-typ[value="${v}"]`); if(cb) cb.checked=true; }); }
+      if(data.stellplaetzeAnz) setVal('f-stellplaetze-anz', data.stellplaetzeAnz);
+      if(data.stellplaetzeKosten) setVal('f-stellplaetze-kosten', data.stellplaetzeKosten);
+      if(data.highlights?.length){ document.getElementById('highlightList').innerHTML=''; data.highlights.forEach(h=>addHighlight(h)); }
+      if(data.ausstattungList?.length){ document.getElementById('ausstattungList').innerHTML=''; data.ausstattungList.forEach(a=>addAusstattung(a)); }
+      if(data.investHighlights?.length){ document.getElementById('investList').innerHTML=''; data.investHighlights.forEach(v=>addInvest(v)); }
+      if(data.einheiten?.length){ document.getElementById('einheitenBody').innerHTML=''; data.einheiten.forEach(e=>addEinheit(e.typ,e.anzahl,e.flaeche,e.preis,e.besonderheit)); }
+      if(data.brandLogoSrc){ const img=document.getElementById('logoPreviewImg'); img.src=data.brandLogoSrc; img.style.display='block'; document.getElementById('logoPlaceholder').style.display='none'; }
+      if(data.mapEnabled){ const cb=document.getElementById('f-mapEnabled'); if(cb){ cb.checked=true; document.getElementById('lageMapWrap').style.display=''; } }
+      [['360','extras360Enabled'],['YT','extrasYTEnabled'],['Sonstiges','extrasSonstigesEnabled'],['Agb','extrasAgbEnabled']].forEach(([k,dk])=>{ if(data[dk]){ const cb=document.getElementById('toggle-'+k); if(cb){ cb.checked=true; const b=document.getElementById('extrasBody'+k); if(b) b.style.display=''; const bl=document.getElementById('extrasBlock'+k); if(bl) bl.classList.add('active'); if(k==='360'&&data.link360) updateQr('360'); if(k==='YT'&&data.linkYT) updateQr('YT'); } } });
+    }
+    if(s) current=parseInt(s)||1;
+  } catch(e){}
+}
+function setVal(id,v){ const el=document.getElementById(id); if(el) el.value=v; }
+
+// ══════════════════════════════════════════════════════
+// PREVIEW BUILDER — Dispatcher
+// ══════════════════════════════════════════════════════
+function selectTemplate(tmpl) {
+  data.template = tmpl;
+  saveToStorage();
+  document.querySelectorAll('.tmpl-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('tmplBtn'+tmpl);
+  if (btn) btn.classList.add('active');
+  buildPreview();
+}
+
+function buildPreview() {
+  collectStep(13);
+  const tmpl = data.template || 'A';
+  document.querySelectorAll('.tmpl-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('tmplBtn'+tmpl);
+  if (btn) btn.classList.add('active');
+  if (tmpl === 'B' && typeof buildPreviewB === 'function') buildPreviewB();
+  else if (tmpl === 'C' && typeof buildPreviewC === 'function') buildPreviewC();
+  else buildPreviewA();
+}
+
+// ══════════════════════════════════════════════════════
+// DEMO DATA (Düsseldorf Ackerstraße 12)
+// ══════════════════════════════════════════════════════
+function loadDemo() {
+  photos = [
+    'demo/fotos/aussenvisu-1.png',
+    'demo/fotos/aussenvisu-2.png',
+    'demo/fotos/innenvisu-kueche-wohnen.png',
+    'demo/fotos/innenvisu-schlafen.png',
+    'demo/fotos/innenvisu-bad.png',
+    'demo/fotos/innenvisu-arbeiten.png',
+    'demo/fotos/innenvisu-flur.png',
+    'demo/fotos/visu-balkon.png',
+  ].map(src => ({ src, caption: '' }));
+  renderPhotoGrid();
+
+  const d = {
+    size:'L', type:'Neubau-Projekt', brandFirma:'Gold Immobilien',
+    titel:'Ackerstraße 12 – Düsseldorf', untertitel:'Neubau · KfW 40 · 9 Wohneinheiten · Kapitalanlage',
+    adresse:'Ackerstraße 12, 40233 Düsseldorf-Flingern', preis:'Ab 319.000 €', preisDetail:'zzgl. 2,38 % Käuferprovision inkl. MwSt.',
+    baujahr:'2026 (Neubau)', zustand:'Neubau / Erstbezug', verfuegbar:'Voraussichtlich Q2 2027',
+    hausgeld:'Auf Anfrage', denkmal:'Nein', einheitenAnz:'9 Wohneinheiten',
+    wohnflaeche:'42,50 – 89,30 m² (je Einheit)', gesamtflaeche:'578,20 m²',
+    zimmer:'1 bis 3-Zimmer-Wohnungen',
+    stellplaetzeTyp:'Tiefgarage, Duplex (Hublift)', stellplaetzeAnz:'9', stellplaetzeKosten:'75 €/Monat',
+    energiestandard:'KfW 40', heizung:'Wärmepumpe', heizungsart:'Fußbodenheizung (Einzelraumregelung)',
+    energieausweis:'Wird beigestellt', energieklasse:'A', energiekennwert:'28,5', energieausweisTyp:'Bedarfsausweis',
+    kaeuferp:'2,38 % inkl. MwSt. aus dem Kaufpreis',
+    weitereKosten:'Notar, Grunderwerbsteuer, ggf. Grundbuch',
+    beschreibung:`Exklusiver Neubau in begehrter Lage von Düsseldorf-Flingern – das Mehrfamilienhaus Ackerstraße 12 verbindet urbane Wohnqualität mit attraktivem Renditepotenzial.
+
+Das Gebäude wird im KfW-40-Standard errichtet und bietet 9 Wohneinheiten von 1 bis 3 Zimmern. Alle Wohnungen verfügen über einen Balkon oder eine Terrasse sowie einen eigenen Kellerabstellraum. Die Erdgeschosswohnungen sind barrierefrei gestaltet.
+
+Als Kapitalanlage profitieren Investoren von der 5 % degressiven Abschreibung für Neubauten sowie dem kontinuierlich wachsenden Düsseldorfer Wohnungsmarkt mit stabiler Nachfrage und steigenden Mieten.`,
+    highlights:['Neubau in zentraler Düsseldorfer Lage','KfW 40 Energiestandard','Alle Wohnungen mit Balkon oder Terrasse','Wohnungen im EG barrierefrei','5 % degressive AfA für Neubauten','Wärmepumpe mit Fußbodenheizung','Photovoltaikanlage auf dem Dach','Parkett, bodengleiche Dusche, elektrische Rollläden'],
+    lage:`Düsseldorf-Flingern zählt zu den attraktivsten innenstadtnahen Stadtteilen der Landeshauptstadt. Die Ackerstraße liegt im Herzen des Quartiers, das sich in den vergangenen Jahren zu einem lebendigen Kreativ- und Wohnviertel entwickelt hat.
+
+Die Lage überzeugt durch eine exzellente ÖPNV-Anbindung: Die U-Bahn-Haltestelle Flingern sowie mehrere Straßenbahnlinien sind fußläufig erreichbar. In wenigen Minuten ist die Düsseldorfer Innenstadt, die Königsallee und der Hauptbahnhof bequem erreichbar.
+
+Das direkte Umfeld bietet eine hohe Versorgungsqualität: Restaurants, Cafés, Boutiquen und Supermärkte prägen das Straßenbild. Schulen und Kitas sind im Nahbereich vorhanden.`,
+    stadtbeschr:`Düsseldorf ist eine der wirtschaftsstärksten Metropolen Deutschlands und Sitz zahlreicher nationaler und internationaler Konzerne. Als Landeshauptstadt Nordrhein-Westfalens vereint die Rheinmetropole Wirtschaftskraft, Internationalität und eine ausgeprägte Lebensqualität.
+
+Der Immobilienmarkt Düsseldorf zählt zu den stabilsten und wertstabilsten in Deutschland. Anhaltende Nachfrage bei begrenztem Angebot sorgt für kontinuierliche Wertentwicklung. Besonders gefragte Lagen wie Flingern, Pempelfort oder Unterbilk verzeichnen überdurchschnittliches Mietpreiswachstum.
+
+Für Kapitalanleger bietet Düsseldorf ein ideales Umfeld: internationale Mieterschaft, starke Wirtschaft, Top-Infrastruktur und ein diversifizierter Arbeitsmarkt in Bereichen wie Finanzen, Mode, Medien und IT.`,
+    ausstattung:`Das Gebäude wird als energieeffizientes Wohnhaus nach KfW-40-Standard errichtet. Die hochwertige Ausführung garantiert Langlebigkeit und niedrige Betriebskosten.
+
+Die Beheizung erfolgt über eine effiziente Wärmepumpe mit Fußbodenheizung und Einzelraumregelung. Eine Photovoltaikanlage auf dem Dach wird in das energetische Gesamtkonzept integriert.
+
+In allen Wohn- und Aufenthaltsräumen wird Parkett verlegt. Bäder erhalten großformatige Feinsteinzeugfliesen. Sanitärobjekte stammen von Markenherstellern wie Duravit und Hansgrohe, inklusive bodengleicher Dusche. Alle Fenster erhalten elektrische Rollläden.`,
+    ausstattungList:['Neubau 2026','KfW 40 Energiestandard','Wärmepumpe + Fußbodenheizung mit Einzelraumregelung','Photovoltaikanlage','Parkett in allen Wohnräumen','Bodengleiche Dusche','Elektrische Rollläden an allen Fenstern','Hochwertige Sanitärobjekte (Duravit / Hansgrohe)','Barrierefrei im Erdgeschoss','Kellerabstellraum je Wohnung'],
+    einheiten:[
+      {typ:'1-Zimmer-Wohnung',anzahl:'2',flaeche:'42,50 – 51,80 m²',preis:'Ab 319.000 €',besonderheit:'EG barrierefrei verfügbar'},
+      {typ:'2-Zimmer-Wohnung',anzahl:'4',flaeche:'58,60 – 72,40 m²',preis:'Ab 419.000 €',besonderheit:''},
+      {typ:'3-Zimmer-Wohnung',anzahl:'3',flaeche:'79,90 – 89,30 m²',preis:'Ab 559.000 €',besonderheit:'Dachgeschoss mit Dachterrasse'},
+    ],
+    investment:`Düsseldorf zählt zu den stabilsten Immobilienmärkten Deutschlands – mit anhaltend hoher Nachfrage, geringem Leerstand und einem starken Mietpreisniveau. Die Ackerstraße 12 bietet Investoren ein attraktives Gesamtpaket aus Lage, Qualität und steuerlichen Vorteilen.
+
+Neubauten profitieren von der 5 % degressiven Abschreibung, die gegenüber der klassischen linearen AfA erhebliche steuerliche Vorteile in den ersten Jahren bietet und die Netto-Investitionskosten deutlich reduziert.`,
+    investHighlights:['5 % degressive Abschreibung für Neubauten (§ 7 EStG)','KfW-Förderung möglich','Stabiler Düsseldorfer Wohnungsmarkt – anhaltend hohe Nachfrage','Steigende Mietnachfrage in Flingern','Nachhaltige Wertsteigerung durch exzellente Innenstadtlage','Hochwertige Ausstattung = attraktiv für bonitätsstarke Mieter'],
+    name:'Ihr Ansprechpartner', tel:'+49 211 / 000 000 00', email:'info@gold-immobilien.de', firma:'Gold Immobilien GmbH', kontaktAdresse:'Königsallee 92, 40212 Düsseldorf',
+  };
+
+  data = d;
+  const gc = document.querySelector(`.groesse-card[data-size="L"]`); if(gc) gc.classList.add('selected');
+  const tc = document.querySelector(`.type-card[data-type="Neubau-Projekt"]`); if(tc) tc.classList.add('selected');
+  const fields=['brandFirma','titel','untertitel','adresse','preis','preisDetail','baujahr','zustand','verfuegbar','hausgeld','denkmal','einheitenAnz','wohnflaeche','gesamtflaeche','zimmer','energiestandard','heizung','heizungsart','energieausweis','energieklasse','energiekennwert','energieausweisTyp','kaeuferp','weitereKosten','beschreibung','lage','stadtbeschr','ausstattung','investment','name','tel','email','firma','kontaktAdresse'];
+  fields.forEach(k=>{ if(d[k]) setVal('f-'+k,d[k]); });
+  if(d.stellplaetzeTyp){ d.stellplaetzeTyp.split(', ').forEach(v=>{ const cb=document.querySelector(`.stellplatz-typ[value="${v}"]`); if(cb) cb.checked=true; }); }
+  if(d.stellplaetzeAnz) setVal('f-stellplaetze-anz', d.stellplaetzeAnz);
+  if(d.stellplaetzeKosten) setVal('f-stellplaetze-kosten', d.stellplaetzeKosten);
+  document.getElementById('highlightList').innerHTML=''; d.highlights.forEach(h=>addHighlight(h));
+  document.getElementById('ausstattungList').innerHTML=''; d.ausstattungList.forEach(a=>addAusstattung(a));
+  document.getElementById('investList').innerHTML=''; d.investHighlights.forEach(v=>addInvest(v));
+  document.getElementById('einheitenBody').innerHTML=''; d.einheiten.forEach(e=>addEinheit(e.typ,e.anzahl,e.flaeche,e.preis,e.besonderheit));
+  buildStepper();
+
+  current = 1; showStep(1); updateNav();
+  saveToStorage();
+}
+
+// ══════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════
+function escHtml(s) {
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+init();
+
+// ══════════════════════════════════════════════════════
+// VOICE RECORDING
+// ══════════════════════════════════════════════════════
+
+function openVoiceModal() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const overlay = document.getElementById('voiceModalOverlay');
+  overlay.classList.add('open');
+  if (!SpeechRecognition) {
+    document.getElementById('voiceNoSupport').style.display = 'block';
+    document.getElementById('voiceBtnRecord').disabled = true;
+    return;
+  }
+  // Reset state
+  voiceTranscript = '';
+  document.getElementById('voiceTranscriptEl').value = '';
+  document.getElementById('voiceStatus').textContent = 'Bereit – drücken Sie „Aufnahme starten"';
+  document.getElementById('voiceStatus').className = 'voice-status';
+  document.getElementById('voiceWave').className = 'voice-wave';
+  document.getElementById('voiceBtnRecord').textContent = '● Aufnahme starten';
+  document.getElementById('voiceBtnRecord').className = 'btn-voice-record';
+  document.getElementById('voiceBtnGenerate').disabled = true;
+  isRecording = false;
+}
+
+function closeVoiceModal() {
+  stopRecognition();
+  document.getElementById('voiceModalOverlay').classList.remove('open');
+}
+
+function toggleRecording() {
+  if (isRecording) {
+    stopRecognition();
+    document.getElementById('voiceBtnRecord').textContent = '● Aufnahme fortsetzen';
+    document.getElementById('voiceBtnRecord').className = 'btn-voice-record';
+    document.getElementById('voiceStatus').textContent = 'Pausiert – Transkript oben bearbeitbar';
+    document.getElementById('voiceStatus').className = 'voice-status';
+    document.getElementById('voiceWave').className = 'voice-wave';
+    isRecording = false;
+  } else {
+    startRecognition();
+  }
+}
+
+function startRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'de-DE';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('voiceBtnRecord').textContent = '■ Aufnahme stoppen';
+    document.getElementById('voiceBtnRecord').className = 'btn-voice-record recording';
+    document.getElementById('voiceStatus').textContent = '● Aufnahme läuft …';
+    document.getElementById('voiceStatus').className = 'voice-status recording';
+    document.getElementById('voiceWave').className = 'voice-wave active';
+  };
+
+  recognition.onresult = (event) => {
+    const el = document.getElementById('voiceTranscriptEl');
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        voiceTranscript += event.results[i][0].transcript + ' ';
+      } else {
+        interim += event.results[i][0].transcript;
+      }
+    }
+    el.value = voiceTranscript + interim;
+    el.scrollTop = el.scrollHeight;
+    document.getElementById('voiceBtnGenerate').disabled = (voiceTranscript.trim() === '' && interim.trim() === '');
+  };
+
+  recognition.onerror = (event) => {
+    if (event.error === 'no-speech') return;
+    document.getElementById('voiceStatus').textContent = 'Fehler: ' + event.error;
+    isRecording = false;
+    stopRecognition();
+  };
+
+  recognition.onend = () => {
+    if (isRecording) recognition.start();
+  };
+
+  recognition.start();
+}
+
+function stopRecognition() {
+  if (recognition) {
+    isRecording = false;
+    recognition.stop();
+    recognition = null;
+  }
+}
+
+async function processVoiceTranscript() {
+  const transcript = document.getElementById('voiceTranscriptEl').value.trim();
+  if (!transcript) return;
+
+  stopRecognition();
+  const btn = document.getElementById('voiceBtnGenerate');
+  const origText = btn.textContent;
+  btn.textContent = '⟳ KI analysiert …';
+  btn.disabled = true;
+  document.getElementById('voiceStatus').textContent = 'KI generiert das Exposé …';
+
+  const systemPrompt = `Du bist ein Assistent für Immobilien-Exposés. Analysiere den folgenden Sprach-Transkript eines Maklers und extrahiere alle verfügbaren Informationen. Antworte NUR mit einem validen JSON-Objekt – keine Erklärungen, kein Markdown, nur JSON. Felder die nicht erwähnt wurden bleiben leer ("").`;
+
+  const schema = `{
+  "type": "Typ wählen aus: Neubau-Projekt, Bestandsimmobilie, Eigentumswohnung, Einfamilienhaus, Mehrfamilienhaus, Gewerbe, Grundstück",
+  "size": "S, M oder L (S=wenige Infos, L=viele Details)",
+  "titel": "prägnanter Exposé-Titel",
+  "untertitel": "kurzer Untertitel",
+  "adresse": "vollständige Adresse",
+  "preis": "Kaufpreis als Zahl oder Text",
+  "preisDetail": "z.B. zzgl. Kaufnebenkosten",
+  "baujahr": "Baujahr",
+  "zustand": "z.B. Neubau, modernisiert, sanierungsbedürftig",
+  "verfuegbar": "Verfügbarkeit / Bezugstermin",
+  "wohnflaeche": "Wohnfläche in m²",
+  "gesamtflaeche": "Gesamtfläche in m²",
+  "zimmer": "Zimmeranzahl",
+  "einheitenAnz": "Anzahl Wohneinheiten (bei Mehrfamilienhäusern)",
+  "stellplaetze": "Anzahl Stellplätze",
+  "energiestandard": "z.B. KfW 40, KfW 55, A+",
+  "heizung": "Heizungsart",
+  "heizungsart": "z.B. Fußbodenheizung, Heizkörper",
+  "energieausweis": "z.B. Bedarfsausweis, 45 kWh/m²a",
+  "hausgeld": "monatliches Hausgeld",
+  "denkmal": "Denkmalschutz ja/nein/leer",
+  "kaeuferp": "Käuferprovision",
+  "weitereKosten": "weitere Kosten",
+  "beschreibung": "ausführliche Objektbeschreibung (3-5 Sätze)",
+  "highlights": ["Highlight 1", "Highlight 2", "Highlight 3"],
+  "lage": "Lagebeschreibung (2-3 Sätze)",
+  "stadtbeschr": "Stadtbeschreibung (2-3 Sätze)",
+  "ausstattung": "Ausstattungsbeschreibung (2-3 Sätze)",
+  "ausstattungList": ["Ausstattungsmerkmal 1", "Ausstattungsmerkmal 2"],
+  "investment": "Investment-Beschreibung (2-3 Sätze)",
+  "investHighlights": ["Investment-Vorteil 1", "Investment-Vorteil 2"]
+}`;
+
+  const userMsg = `Transkript des Maklers:\n"${transcript}"\n\nFülle dieses JSON-Schema mit den extrahierten Informationen. Generiere für leere Felder sinnvolle Texte auf Basis des Kontexts:\n${schema}`;
+
+  try {
+    const res = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userMsg }
+        ],
+        model: 'openai',
+        seed: Math.floor(Math.random() * 9999)
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let raw = await res.text();
+    raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    const parsed = JSON.parse(raw);
+    applyVoiceData(parsed);
+    closeVoiceModal();
+  } catch (err) {
+    alert('Fehler bei der KI-Analyse: ' + err.message + '\n\nBitte Internetverbindung prüfen oder Transkript kürzen.');
+    btn.textContent = origText;
+    btn.disabled = false;
+    document.getElementById('voiceStatus').textContent = 'Fehler – bitte erneut versuchen';
+  }
+}
+
+function applyVoiceData(d) {
+  if (d.size && ['S','M','L'].includes(d.size)) data.size = d.size;
+  else data.size = 'L';
+
+  if (d.type) data.type = d.type;
+
+  const fields = ['titel','untertitel','adresse','preis','preisDetail',
+    'baujahr','zustand','verfuegbar','wohnflaeche','gesamtflaeche',
+    'zimmer','einheitenAnz','energiestandard','heizung',
+    'heizungsart','energieausweis','energieklasse','energiekennwert','energieausweisTyp',
+    'hausgeld','denkmal','kaeuferp',
+    'weitereKosten','beschreibung','lage','stadtbeschr','ausstattung','investment'];
+
+  fields.forEach(key => {
+    if (d[key]) {
+      data[key] = d[key];
+      setVal('f-'+key, d[key]);
+    }
+  });
+
+  if (Array.isArray(d.highlights) && d.highlights.length) {
+    data.highlights = d.highlights;
+    const list = document.getElementById('highlightList');
+    if (list) { list.innerHTML = ''; d.highlights.forEach(v => addHighlight(v)); }
+  }
+  if (Array.isArray(d.ausstattungList) && d.ausstattungList.length) {
+    data.ausstattungList = d.ausstattungList;
+    const list = document.getElementById('ausstattungList');
+    if (list) { list.innerHTML = ''; d.ausstattungList.forEach(v => addAusstattung(v)); }
+  }
+  if (Array.isArray(d.investHighlights) && d.investHighlights.length) {
+    data.investHighlights = d.investHighlights;
+    const list = document.getElementById('investList');
+    if (list) { list.innerHTML = ''; d.investHighlights.forEach(v => addInvest(v)); }
+  }
+
+  saveToStorage();
+  navigateToStep(14);
+}
+
+// ══════════════════════════════════════════════════════
+// MOBILE BURGER / STEPPER DRAWER
+// ══════════════════════════════════════════════════════
+function openStepperDrawer() {
+  document.getElementById('stepperCol').classList.add('open');
+  document.getElementById('stepperBackdrop').classList.add('open');
+}
+
+function closeStepperDrawer() {
+  document.getElementById('stepperCol').classList.remove('open');
+  document.getElementById('stepperBackdrop').classList.remove('open');
+}
+
+function updateBurgerLabel() {
+  const lbl = document.getElementById('burgerBtnLabel');
+  if (!lbl) return;
+  const active = getActiveStepIds();
+  const idx = active.indexOf(current);
+  const def = ALL_STEP_DEFS.find(s => s.id === current);
+  if (def) lbl.textContent = `${idx + 1} · ${def.label}`;
+}
+</script>
+
+<!-- Mobile Stepper Backdrop -->
+<div class="stepper-backdrop" id="stepperBackdrop" onclick="closeStepperDrawer()"></div>
+
+<!-- Mobile Burger Button -->
+<button class="burger-btn" id="burgerBtn" onclick="openStepperDrawer()">
+  <span class="burger-btn-icon">☰</span>
+  <span class="burger-btn-label" id="burgerBtnLabel">Schritte</span>
+</button>
+</body>
+</html>
