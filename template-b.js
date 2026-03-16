@@ -15,7 +15,7 @@ const TB_CSS = `
   box-shadow: 0 4px 40px rgba(0,0,0,.15);
   overflow: hidden;
   page-break-after: always;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Carlito', sans-serif;
   color: #3a3a3a;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
@@ -82,7 +82,7 @@ const TB_CSS = `
   object-fit: contain;
 }
 .tb-cover-logo-firm {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 10pt;
   font-weight: 700;
   color: #3a3a3a;
@@ -106,7 +106,7 @@ const TB_CSS = `
   margin-bottom: 0.7rem;
 }
 .tb-cover-title {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 26pt;
   font-weight: 700;
   color: #3a3a3a;
@@ -192,7 +192,7 @@ const TB_CSS = `
 .tb-ek-chip {
   display: inline-block;
   color: white;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 18pt;
   font-weight: 700;
   padding: 0.2rem 0.7rem;
@@ -212,7 +212,7 @@ const TB_CSS = `
   padding: 2.5rem 2.5rem 2.5rem 3rem;
 }
 .tb-facts-headline {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 38pt;
   font-weight: 300;
   color: #3a3a3a;
@@ -291,7 +291,7 @@ const TB_CSS = `
   padding: 4rem 2.5rem 1.8rem;
 }
 .tb-photo-overlay-headline {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 30pt;
   font-weight: 700;
   color: white;
@@ -305,7 +305,7 @@ const TB_CSS = `
   padding: 0 2.5rem 1.5rem;
 }
 .tb-lage-hl1 {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 40pt;
   font-weight: 300;
   color: #3a3a3a;
@@ -314,7 +314,7 @@ const TB_CSS = `
   text-transform: uppercase;
 }
 .tb-lage-hl2 {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 40pt;
   font-weight: 300;
   color: #b25450;
@@ -323,7 +323,7 @@ const TB_CSS = `
   text-transform: uppercase;
 }
 .tb-lage-hl3 {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 22pt;
   font-weight: 300;
   color: #3a3a3a;
@@ -389,7 +389,7 @@ const TB_CSS = `
   padding: 2.5rem 2.8rem 2.5rem 3.2rem;
 }
 .tb-stadt-overlay-title {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 16pt;
   font-weight: 700;
   color: white;
@@ -464,7 +464,7 @@ const TB_CSS = `
   padding: 3rem 2.5rem 1.5rem;
 }
 .tb-aus-photo-headline {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 40pt;
   font-weight: 700;
   color: white;
@@ -474,7 +474,7 @@ const TB_CSS = `
 
 /* ─── WOHNUNGEN / EINHEITEN ─────────────────────────── */
 .tb-wohn-title {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 62pt;
   font-weight: 300;
   color: #3a3a3a;
@@ -627,7 +627,7 @@ const TB_CSS = `
   margin-bottom: 0.4rem;
 }
 .tb-contact-name {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 14pt;
   font-weight: 400;
   color: white;
@@ -733,7 +733,7 @@ const TB_CSS = `
   margin-bottom: 0.3rem;
 }
 .tb-back-number {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 72pt;
   font-weight: 700;
   color: #b25450;
@@ -1112,7 +1112,7 @@ function buildPreviewB() {
       <div style="height:8px;background:${pair.accent}"></div>
       <div style="padding:2.5rem 2.8rem">
         <div style="font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#aaa;margin-bottom:.3rem">EXTRAS</div>
-        <div style="font-family:'Ubuntu',sans-serif;font-size:1.7rem;font-weight:700;color:${pair.accent};text-transform:uppercase;letter-spacing:.04em;padding-bottom:.8rem;border-bottom:2px solid ${pair.accent};margin-bottom:1.8rem">Weitere Informationen</div>
+        <div style="font-family:'Carlito',sans-serif;font-size:1.7rem;font-weight:700;color:${pair.accent};text-transform:uppercase;letter-spacing:.04em;padding-bottom:.8rem;border-bottom:2px solid ${pair.accent};margin-bottom:1.8rem">Weitere Informationen</div>
         ${qrBlockB(d.extras360Enabled, d.link360, '360°-Rundgang', '🔄')}
         ${qrBlockB(d.extrasYTEnabled, d.linkYT, 'Video', '▶')}
         ${(d.extrasSonstigesEnabled && d.sonstigerText) ? `<div style="margin-bottom:1.5rem"><div style="font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:${pair.accent};font-weight:700;margin-bottom:.5rem">SONSTIGES</div><div style="font-size:.88rem;color:#333;line-height:1.8;white-space:pre-wrap">${escB(d.sonstigerText)}</div></div>` : ''}

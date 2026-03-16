@@ -15,7 +15,7 @@ const TC_CSS = `
   box-shadow: 0 4px 40px rgba(0,0,0,.15);
   overflow: hidden;
   page-break-after: always;
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Carlito', sans-serif;
   color: #2c2c2c;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
@@ -95,7 +95,7 @@ const TC_CSS = `
   filter: brightness(0) invert(1);
 }
 .tc-cover-logo-text {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 10pt;
   font-weight: 700;
   color: #ffffff;
@@ -107,7 +107,7 @@ const TC_CSS = `
   z-index: 2;
 }
 .tc-cover-headline {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 27pt;
   font-weight: 700;
   color: #ffffff;
@@ -155,7 +155,7 @@ const TC_CSS = `
 
 /* ─── TYPOGRAPHY ─────────────────────────────────────── */
 .tc-section-title {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 24pt;
   font-weight: 700;
   color: #1a2744;
@@ -375,7 +375,7 @@ const TC_CSS = `
 }
 .tc-stat-box { border-top: 2px solid #1a2744; padding-top: 0.7rem; }
 .tc-stat-num {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 18pt;
   font-weight: 700;
   color: #1a2744;
@@ -455,7 +455,7 @@ const TC_CSS = `
   margin-right: auto;
 }
 .tc-contact-logo-text {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 13pt;
   font-weight: 700;
   color: #ffffff;
@@ -464,7 +464,7 @@ const TC_CSS = `
   margin-bottom: 2rem;
 }
 .tc-contact-headline {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Carlito', sans-serif;
   font-size: 24pt;
   font-weight: 700;
   color: #ffffff;
@@ -791,7 +791,7 @@ function buildPreviewC() {
       <div style="height:8px;background:${cpairC.accent}"></div>
       <div style="padding:2.5rem 2.8rem">
         <div style="font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:#aaa;margin-bottom:.3rem">EXTRAS</div>
-        <div style="font-family:'Ubuntu',sans-serif;font-size:1.7rem;font-weight:700;color:${cpairC.accent};text-transform:uppercase;letter-spacing:.04em;padding-bottom:.8rem;border-bottom:2px solid ${cpairC.accent};margin-bottom:1.8rem">Weitere Informationen</div>
+        <div style="font-family:'Carlito',sans-serif;font-size:1.7rem;font-weight:700;color:${cpairC.accent};text-transform:uppercase;letter-spacing:.04em;padding-bottom:.8rem;border-bottom:2px solid ${cpairC.accent};margin-bottom:1.8rem">Weitere Informationen</div>
         ${qrBlockC(d.extras360Enabled, d.link360, '360°-Rundgang', '🔄')}
         ${qrBlockC(d.extrasYTEnabled, d.linkYT, 'Video', '▶')}
         ${(d.extrasSonstigesEnabled && d.sonstigerText) ? `<div style="margin-bottom:1.5rem"><div style="font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:${cpairC.accent};font-weight:700;margin-bottom:.5rem">SONSTIGES</div><div style="font-size:.88rem;color:#333;line-height:1.8;white-space:pre-wrap">${esc(d.sonstigerText)}</div></div>` : ''}
