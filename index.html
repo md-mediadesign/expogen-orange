@@ -154,6 +154,10 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
 .color-pair-card{border:2px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:border-color .25s,background .25s;text-align:center}
 .color-pair-card:hover{border-color:var(--gold)}
 .color-pair-card.selected{border-color:var(--gold);background:rgba(244,159,37,.07)}
+.color-pair-grid--locked{pointer-events:none}
+.color-pair-grid--locked .color-pair-card:not(.selected){opacity:.3;filter:grayscale(.5)}
+.color-pair-grid--locked .color-pair-card.selected{opacity:1;filter:none}
+.color-locked-notice{margin-top:1.2rem;padding:.85rem 1.1rem;background:rgba(244,159,37,.07);border:1px solid rgba(244,159,37,.25);border-radius:10px;font-size:.8rem;color:var(--muted);line-height:1.6}
 .cp-swatch{display:flex;height:40px;border-radius:6px;overflow:hidden;margin-bottom:.75rem}
 .cp-swatch-accent,.cp-swatch-secondary{flex:1}
 .cp-name{font-size:.85rem;font-weight:600;color:var(--cream);margin-bottom:.2rem}
@@ -1030,33 +1034,36 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
     <div class="step-content" data-step="15">
       <div class="step-num" id="stepNum15"></div>
       <div class="step-title">Farbschema</div>
-      <div class="step-desc">Wählen Sie ein Farbpaar – passend zu Ihrer Immobilie. Alle Kombinationen sind druckoptimiert.</div>
-      <div class="color-pair-grid" id="colorPairGrid">
-        <div class="color-pair-card" data-pair="1" onclick="selectColorPair(this)">
+      <div class="step-desc">In der Vollversion von Expogen stehen verschiedene Farbkombinationen zur Auswahl.</div>
+      <div class="color-pair-grid color-pair-grid--locked" id="colorPairGrid">
+        <div class="color-pair-card selected" data-pair="1">
           <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#0f1d40"></div><div class="cp-swatch-secondary" style="background:#c4a43c"></div></div>
           <div class="cp-name">Navy &amp; Gold</div>
           <div class="cp-desc">Zeitloser Luxus</div>
         </div>
-        <div class="color-pair-card" data-pair="2" onclick="selectColorPair(this)">
+        <div class="color-pair-card" data-pair="2">
           <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#b25450"></div><div class="cp-swatch-secondary" style="background:#c5b98a"></div></div>
           <div class="cp-name">Terrakotta &amp; Sand</div>
           <div class="cp-desc">Warm &amp; Editorial</div>
         </div>
-        <div class="color-pair-card" data-pair="3" onclick="selectColorPair(this)">
+        <div class="color-pair-card" data-pair="3">
           <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#2a4a35"></div><div class="cp-swatch-secondary" style="background:#e8dcc0"></div></div>
           <div class="cp-name">Waldgrün &amp; Creme</div>
           <div class="cp-desc">Natur &amp; Prestige</div>
         </div>
-        <div class="color-pair-card" data-pair="4" onclick="selectColorPair(this)">
+        <div class="color-pair-card" data-pair="4">
           <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#2f2f2f"></div><div class="cp-swatch-secondary" style="background:#c9a97a"></div></div>
           <div class="cp-name">Anthrazit &amp; Champagner</div>
           <div class="cp-desc">Modern Urban</div>
         </div>
-        <div class="color-pair-card" data-pair="5" onclick="selectColorPair(this)">
+        <div class="color-pair-card" data-pair="5">
           <div class="cp-swatch"><div class="cp-swatch-accent" style="background:#6e2535"></div><div class="cp-swatch-secondary" style="background:#ede5d5"></div></div>
           <div class="cp-name">Bordeaux &amp; Elfenbein</div>
           <div class="cp-desc">Eleganz &amp; Klassik</div>
         </div>
+      </div>
+      <div class="color-locked-notice">
+        🔒 In der ORANGE Immobilienagentur Version stehen die Farboptionen nicht zur Auswahl – die CI-Farben des Unternehmens sind bereits voreingestellt und werden automatisch verwendet.
       </div>
       <p class="error-msg" id="err-colorPair">Bitte wählen Sie ein Farbschema.</p>
     </div>
@@ -1582,6 +1589,7 @@ function collectStep(id) {
   if (id===12){ data.investment=val('f-investment'); data.investHighlights=[...document.querySelectorAll('.inv-input')].map(i=>i.value.trim()).filter(Boolean); }
   if (id===13){ data.name=val('f-name'); data.tel=val('f-tel'); data.email=val('f-email'); data.firma=val('f-firma'); data.kontaktAdresse=val('f-kontaktAdresse'); }
   if (id===14){ data.link360=val('f-link360'); data.linkYT=val('f-linkYT'); data.sonstigerText=val('f-sonstigerText'); data.agbText=val('f-agbText'); data.extras360Enabled=document.getElementById('toggle-360')?.checked||false; data.extrasYTEnabled=document.getElementById('toggle-YT')?.checked||false; data.extrasSonstigesEnabled=document.getElementById('toggle-Sonstiges')?.checked||false; data.extrasAgbEnabled=document.getElementById('toggle-Agb')?.checked||false; }
+  if (id===15){ data.colorPair = 1; } // ORANGE CI – gesperrt
 }
 
 function collectEinheiten() {
@@ -2042,7 +2050,7 @@ function resetCurrentStep() {
       delete data.link360; delete data.linkYT; delete data.sonstigerText; delete data.agbText; delete data.extras360Enabled; delete data.extrasYTEnabled; delete data.extrasSonstigesEnabled; delete data.extrasAgbEnabled;
       hinweisManualOverrides={}; hinweisModeSelected='kurz'; setHinweisMode('kurz');
       const hbar=document.getElementById('hinweisResultBar'); if(hbar) hbar.style.display='none'; break;
-    case 15: delete data.colorPair; resetColorPairSelection(); break;
+    case 15: break; // Farbschema gesperrt – kein Reset möglich
   }
   clearErrors(); saveToStorage();
 }
