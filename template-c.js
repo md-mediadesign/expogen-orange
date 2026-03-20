@@ -617,7 +617,7 @@ function buildPreviewC() {
     ['Wohnfläche', d.wohnflaeche],
     ['Gesamtfläche', d.gesamtflaeche],
     ['Zimmer', d.zimmer],
-    ['Stellplätze', (formatStellplaetzeLines(d.stellplaetze)||[]).join(' · ')],
+    ['Stellplätze', (formatStellplaetzeLines(d.stellplaetze)||[]).join('\n')],
     ['Einheiten', d.einheitenAnz],
     ['Hausgeld', d.hausgeld],
     ['Energiestandard', d.energiestandard],
@@ -641,7 +641,7 @@ function buildPreviewC() {
           ${facts.map(([k, v]) => `
           <div class="tc-fact-row">
             <span class="tc-fact-label">${esc(k)}</span>
-            <span class="tc-fact-value">${esc(v)}</span>
+            <span class="tc-fact-value">${esc(v).replace(/\n/g,'<br>')}</span>
           </div>`).join('')}
         </div>
       </div>
