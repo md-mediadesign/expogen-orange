@@ -8,6 +8,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- PDF text extraction -->
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<!-- Word (.docx) text extraction -->
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.2/mammoth.browser.min.js"></script>
 <style>
 /* ══════════════════════════════════════════════════════
    BASE
@@ -30,9 +34,17 @@ body{background:var(--navy);color:var(--text);font-family:'Carlito',sans-serif;f
 header{width:100%;max-width:1180px;margin:0 auto;padding:2rem 2.5rem 0;display:flex;align-items:center;justify-content:space-between}
 .logo{font-family:'Carlito',sans-serif;font-size:1.9rem;font-weight:700;letter-spacing:.15em;color:var(--gold2)}
 .logo span{color:var(--text);opacity:.4;font-style:italic;font-size:.9rem;letter-spacing:.05em;margin-left:8px;font-weight:300}
-.header-actions{display:flex;align-items:center;gap:.7rem}
+.header-actions{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;justify-content:flex-end}
 .btn-header-reset{background:transparent;border:1px solid rgba(224,85,85,.3);border-radius:20px;color:rgba(224,85,85,.7);font-family:'Carlito',sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.06em;padding:.35rem 1rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.4rem}
 .btn-header-reset:hover{border-color:#e05555;color:#e05555;background:rgba(224,85,85,.08)}
+.btn-header-upload{background:transparent;border:1px solid rgba(244,159,37,.3);border-radius:20px;color:var(--gold);font-family:'Carlito',sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.06em;padding:.35rem 1rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.4rem}
+.btn-header-upload:hover{border-color:var(--gold);background:rgba(244,159,37,.08)}
+.header-size-switch{display:inline-flex;border:1px solid rgba(244,159,37,.25);border-radius:20px;overflow:hidden;background:rgba(0,0,0,.25)}
+.header-size-switch-label{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:.35rem .75rem .35rem .9rem;align-self:center;border-right:1px solid rgba(244,159,37,.15);background:rgba(255,255,255,.02)}
+.header-size-btn{background:transparent;border:none;color:var(--muted);font-family:'Carlito',sans-serif;font-size:.78rem;font-weight:700;padding:.3rem .85rem;cursor:pointer;transition:all .2s;border-right:1px solid rgba(244,159,37,.12);min-width:34px}
+.header-size-btn:last-child{border-right:none}
+.header-size-btn:hover{color:var(--gold);background:rgba(244,159,37,.06)}
+.header-size-btn.active{background:var(--gold);color:var(--navy)}
 .btn-header-projects{background:transparent;border:1px solid rgba(244,159,37,.35);border-radius:20px;color:var(--gold);font-family:'Carlito',sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.06em;padding:.35rem 1rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.4rem}
 .btn-header-projects:hover{border-color:var(--gold);background:rgba(244,159,37,.1)}
 
@@ -345,23 +357,106 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
 /* ══════════════════════════════════════════════════════
    STARTUP MODAL
 ══════════════════════════════════════════════════════ */
-.startup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+/* ══════════════════════════════════════════════════════
+   STARTUP WIZARD
+══════════════════════════════════════════════════════ */
+.startup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .35s;padding:1rem}
 .startup-overlay.open{opacity:1;pointer-events:all}
-.startup-modal{background:var(--navy2);border:1px solid var(--border);border-radius:20px;padding:2.5rem 2.4rem;max-width:460px;width:92%;box-shadow:0 32px 100px rgba(0,0,0,.8);transform:scale(.95);transition:transform .3s;text-align:center}
-.startup-overlay.open .startup-modal{transform:scale(1)}
-.startup-logo{font-family:'Carlito',sans-serif;font-size:1.6rem;font-weight:700;color:var(--gold);letter-spacing:.04em;margin-bottom:.4rem}
-.startup-tagline{font-size:.82rem;color:var(--muted);margin-bottom:2rem}
-.startup-options{display:flex;flex-direction:column;gap:.75rem}
-.btn-startup{border-radius:12px;padding:1rem 1.4rem;font-family:'Carlito',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;border:none;display:flex;align-items:center;gap:.8rem;text-align:left}
-.btn-startup-primary{background:var(--gold);color:var(--navy)}
-.btn-startup-primary:hover{background:#dbb84a;transform:translateY(-1px)}
-.btn-startup-secondary{background:rgba(255,255,255,.06);color:var(--cream);border:1px solid rgba(255,255,255,.1)}
-.btn-startup-secondary:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
-.btn-startup-resume{background:rgba(244,159,37,.12);color:var(--gold);border:1px solid rgba(244,159,37,.25)}
-.btn-startup-resume:hover{background:rgba(244,159,37,.2);transform:translateY(-1px)}
-.btn-startup-icon{font-size:1.3rem;flex-shrink:0}
-.btn-startup-text strong{display:block;font-size:.88rem}
-.btn-startup-text span{font-size:.76rem;font-weight:400;opacity:.7}
+.startup-modal{background:var(--navy2);border:1px solid var(--border);border-radius:24px;padding:2.2rem 2.4rem 2.4rem;max-width:600px;width:100%;box-shadow:0 40px 120px rgba(0,0,0,.9);transform:translateY(16px) scale(.97);transition:transform .35s cubic-bezier(.2,.8,.3,1);max-height:90vh;overflow-y:auto}
+.startup-overlay.open .startup-modal{transform:translateY(0) scale(1)}
+
+.sw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.8rem}
+.sw-logo{font-family:'Carlito',sans-serif;font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:.06em}
+.sw-logo span{color:var(--muted);font-size:.72rem;font-style:italic;font-weight:300;margin-left:6px;letter-spacing:.04em}
+
+.sw-stepper{display:flex;align-items:center;gap:6px}
+.sw-dot{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(244,159,37,.25);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:600;color:var(--muted);transition:all .3s}
+.sw-dot.active{border-color:var(--gold);background:var(--gold);color:var(--navy)}
+.sw-dot.done{border-color:var(--gold);color:var(--gold)}
+.sw-line{width:24px;height:1px;background:var(--border);transition:background .3s}
+.sw-line.done{background:rgba(244,159,37,.4)}
+
+.sw-panel{animation:fadeSlide .25s ease both}
+.sw-panel.hidden{display:none}
+.sw-step-label{font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.35rem}
+.sw-step-title{font-family:'Carlito',sans-serif;font-size:1.5rem;font-weight:700;color:var(--cream);line-height:1.15;margin-bottom:.35rem}
+.sw-step-desc{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:1.5rem}
+
+.sw-resume-btn{display:flex;align-items:center;gap:.85rem;background:rgba(244,159,37,.07);border:1px solid rgba(244,159,37,.22);border-radius:12px;padding:.9rem 1.2rem;cursor:pointer;width:100%;margin-bottom:.9rem;transition:all .22s;font-family:'Carlito',sans-serif;text-align:left}
+.sw-resume-btn:hover{background:rgba(244,159,37,.14);border-color:var(--gold)}
+.sw-resume-icon{font-size:1.3rem;flex-shrink:0}
+.sw-resume-text strong{display:block;font-size:.88rem;color:var(--gold2);font-weight:600;margin-bottom:.1rem}
+.sw-resume-text span{font-size:.74rem;color:var(--muted)}
+.sw-divider{display:flex;align-items:center;gap:.7rem;margin-bottom:.9rem}
+.sw-divider::before,.sw-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.sw-divider-txt{font-size:.68rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+
+.sw-datasrc-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.4rem}
+@media(max-width:500px){.sw-datasrc-grid{grid-template-columns:1fr}}
+.sw-card{background:rgba(255,255,255,.03);border:1.5px solid rgba(244,159,37,.15);border-radius:var(--radius);padding:1.1rem 1.2rem;cursor:pointer;transition:all .25s;display:flex;align-items:flex-start;gap:.85rem}
+.sw-card:hover{border-color:rgba(244,159,37,.45);background:rgba(244,159,37,.05)}
+.sw-card.selected{border-color:var(--gold);background:rgba(244,159,37,.1);box-shadow:0 0 22px rgba(244,159,37,.13)}
+.sw-card-icon{font-size:1.5rem;flex-shrink:0;margin-top:.05rem}
+.sw-card-title{font-family:'Carlito',sans-serif;font-size:.95rem;font-weight:700;color:var(--cream);margin-bottom:.2rem}
+.sw-card-desc{font-size:.74rem;color:var(--muted);line-height:1.4}
+
+.sw-size-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;margin-bottom:.4rem}
+@media(max-width:500px){.sw-size-grid{grid-template-columns:1fr}}
+.sw-size-card{background:rgba(255,255,255,.03);border:1.5px solid rgba(244,159,37,.15);border-radius:var(--radius);padding:1.1rem 1rem;cursor:pointer;transition:all .25s;display:flex;flex-direction:column;gap:.25rem;text-align:center;align-items:center}
+.sw-size-card:hover{border-color:rgba(244,159,37,.45);background:rgba(244,159,37,.05)}
+.sw-size-card.selected{border-color:var(--gold);background:rgba(244,159,37,.1);box-shadow:0 0 22px rgba(244,159,37,.13)}
+.sw-size-badge{font-family:'Carlito',sans-serif;font-size:2rem;font-weight:700;color:var(--gold2);line-height:1}
+.sw-size-name{font-family:'Carlito',sans-serif;font-size:.88rem;font-weight:700;color:var(--cream)}
+.sw-size-pages{font-size:.68rem;color:var(--gold);font-weight:500;opacity:.8}
+.sw-size-desc{font-size:.72rem;color:var(--muted);line-height:1.4;margin-top:.15rem}
+
+.sw-method-grid{display:flex;flex-direction:column;gap:.55rem;margin-bottom:.4rem}
+.sw-method-card{background:rgba(255,255,255,.03);border:1.5px solid rgba(244,159,37,.15);border-radius:var(--radius);padding:.9rem 1.1rem;cursor:pointer;transition:all .25s;display:flex;align-items:center;gap:.85rem}
+.sw-method-card:hover{border-color:rgba(244,159,37,.45);background:rgba(244,159,37,.05)}
+.sw-method-card.selected{border-color:var(--gold);background:rgba(244,159,37,.08)}
+.sw-method-icon{font-size:1.4rem;flex-shrink:0}
+.sw-method-body{flex:1;min-width:0}
+.sw-method-title{font-family:'Carlito',sans-serif;font-size:.9rem;font-weight:700;color:var(--cream);margin-bottom:.12rem}
+.sw-method-desc{font-size:.73rem;color:var(--muted);line-height:1.4}
+.sw-method-check{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(244,159,37,.3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:transparent;transition:all .25s}
+.sw-method-card.selected .sw-method-check{border-color:var(--gold);background:var(--gold);color:var(--navy)}
+
+.sw-file-zone{border:2px dashed rgba(244,159,37,.28);border-radius:var(--radius);padding:1.4rem;text-align:center;cursor:pointer;transition:all .3s;background:rgba(255,255,255,.02);margin-top:.5rem;display:none}
+.sw-file-zone.visible{display:block}
+.sw-file-zone:hover,.sw-file-zone.dragover{border-color:var(--gold);background:rgba(244,159,37,.05)}
+.sw-file-zone-icon{font-size:2rem;opacity:.5;margin-bottom:.4rem}
+.sw-file-zone-text{font-size:.82rem;color:var(--muted);margin-bottom:.3rem}
+.sw-file-zone-sub{font-size:.68rem;color:rgba(244,159,37,.5)}
+.sw-uploaded-files{margin-top:.6rem;display:flex;flex-direction:column;gap:.3rem}
+.sw-file-item{display:flex;align-items:center;gap:.55rem;background:rgba(244,159,37,.07);border:1px solid rgba(244,159,37,.2);border-radius:7px;padding:.4rem .9rem;font-size:.78rem;color:var(--text)}
+.sw-file-item-icon{font-size:1rem;flex-shrink:0}
+.sw-file-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sw-file-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:0 .1rem;line-height:1;transition:color .2s}
+.sw-file-item-del:hover{color:#e05555}
+
+.sw-nav{display:flex;justify-content:space-between;align-items:center;margin-top:1.6rem;padding-top:1.2rem;border-top:1px solid var(--border);gap:.8rem}
+.sw-back-btn{background:transparent;border:1px solid rgba(244,159,37,.22);border-radius:8px;color:var(--muted);font-family:'Carlito',sans-serif;font-size:.82rem;font-weight:500;padding:.65rem 1.4rem;cursor:pointer;transition:all .22s}
+.sw-back-btn:hover{border-color:var(--gold);color:var(--gold)}
+.sw-next-btn,.sw-start-btn{background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Carlito',sans-serif;font-size:.85rem;font-weight:700;padding:.75rem 2rem;cursor:pointer;transition:all .25s;letter-spacing:.04em}
+.sw-next-btn:hover,.sw-start-btn:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 4px 18px rgba(244,159,37,.35)}
+.sw-start-btn:disabled,.sw-next-btn:disabled{background:rgba(244,159,37,.25);color:rgba(26,26,46,.5);cursor:not-allowed;transform:none;box-shadow:none}
+.sw-start-btn:disabled:hover,.sw-next-btn:disabled:hover{background:rgba(244,159,37,.25);transform:none;box-shadow:none}
+
+/* Teaser: additional media preview (visible on all wizard steps) */
+.sw-teaser{margin-top:1.6rem;padding-top:1.2rem;border-top:1px solid var(--border)}
+.sw-teaser-kicker{font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:.8rem}
+.sw-teaser-items{display:flex;flex-wrap:wrap;justify-content:center;gap:.55rem .7rem}
+.sw-teaser-item{display:inline-flex;align-items:center;gap:.4rem;background:rgba(244,159,37,.05);border:1px solid rgba(244,159,37,.14);border-radius:999px;padding:.28rem .75rem;font-size:.72rem;color:var(--cream);font-weight:500}
+.sw-teaser-icon{font-size:.95rem;line-height:1}
+.sw-teaser-soon{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.04);border-radius:4px;padding:.08rem .35rem;margin-left:.2rem;font-weight:600}
+.sw-error{font-size:.75rem;color:#e07070;margin-top:.4rem;display:none}
+.sw-error.show{display:block}
+
+/* Legacy stubs */
+.btn-startup{display:none}
+.startup-logo{display:none}
+.startup-tagline{display:none}
+.startup-options{display:none}
 
 /* ══════════════════════════════════════════════════════
    MODALS
@@ -412,6 +507,9 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
   .btn-step-reset,
   .btn-save,
   .btn-header-reset,
+  .btn-header-upload,
+  .header-actions,
+  .header-size-switch,
   .confirm-overlay,
   .ai-modal-overlay,
   .projects-overlay,
@@ -700,6 +798,36 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
 .btn-proj-delete{background:transparent;border:1px solid rgba(224,85,85,.3);border-radius:7px;color:rgba(224,85,85,.6);font-family:'Carlito',sans-serif;font-size:.75rem;padding:.4rem .65rem;cursor:pointer;transition:all .2s}
 .btn-proj-delete:hover{border-color:#e05555;color:#e05555;background:rgba(224,85,85,.08)}
 .projects-empty{color:var(--muted);font-size:.85rem;text-align:center;padding:2rem 1rem;line-height:1.7}
+
+/* ══════════════════════════════════════════════════════
+   FILE ANALYSIS MODAL
+══════════════════════════════════════════════════════ */
+.fa-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:4000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.fa-overlay.open{opacity:1;pointer-events:all}
+.fa-modal{background:var(--navy2);border:1px solid var(--border);border-radius:20px;padding:2.4rem 2.6rem;max-width:440px;width:92%;box-shadow:0 32px 80px rgba(0,0,0,.8);text-align:center}
+.fa-icon{font-size:2.8rem;margin-bottom:1rem}
+.fa-title{font-family:'Carlito',sans-serif;font-size:1.3rem;font-weight:700;color:var(--cream);margin-bottom:.5rem}
+.fa-status{font-size:.88rem;color:var(--muted);min-height:1.4em;margin-bottom:1.6rem;line-height:1.5}
+.fa-spinner{display:flex;justify-content:center;gap:6px;margin-bottom:1.6rem}
+.fa-spinner span{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:faBounce 1.2s ease-in-out infinite}
+.fa-spinner span:nth-child(1){animation-delay:0s}
+.fa-spinner span:nth-child(2){animation-delay:.2s}
+.fa-spinner span:nth-child(3){animation-delay:.4s}
+@keyframes faBounce{0%,80%,100%{transform:scale(.4);opacity:.4}40%{transform:scale(1);opacity:1}}
+.fa-log{text-align:left;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;max-height:140px;overflow-y:auto;margin-bottom:1.4rem;display:none}
+.fa-log.show{display:block}
+.fa-log-item{font-size:.75rem;color:var(--muted);padding:.18rem 0;display:flex;align-items:flex-start;gap:.5rem;line-height:1.4}
+.fa-log-item.done{color:var(--gold)}
+.fa-log-item.err{color:#e07070}
+.fa-log-icon{flex-shrink:0;width:14px}
+.fa-result{background:rgba(244,159,37,.07);border:1px solid rgba(244,159,37,.22);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.4rem;text-align:left;display:none}
+.fa-result.show{display:block}
+.fa-result-title{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.6rem}
+.fa-result-row{font-size:.8rem;color:var(--text);display:flex;gap:.5rem;padding:.15rem 0}
+.fa-result-row span:first-child{color:var(--muted);min-width:90px}
+.fa-close-btn{background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-family:'Carlito',sans-serif;font-size:.85rem;font-weight:700;padding:.75rem 2rem;cursor:pointer;transition:all .25s;display:none}
+.fa-close-btn.show{display:inline-block}
+.fa-close-btn:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 4px 18px rgba(244,159,37,.35)}
 </style>
 </head>
 <body>
@@ -707,6 +835,13 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
 <header>
   <div class="logo">ORANGE <span>Exposé Generator</span></div>
   <div class="header-actions">
+    <div class="header-size-switch" id="headerSizeSwitch" title="Exposé-Größe wechseln – Daten bleiben erhalten">
+      <span class="header-size-switch-label">Größe</span>
+      <button class="header-size-btn" data-size="S" onclick="switchSize('S')">S</button>
+      <button class="header-size-btn" data-size="M" onclick="switchSize('M')">M</button>
+      <button class="header-size-btn" data-size="L" onclick="switchSize('L')">L</button>
+    </div>
+    <button class="btn-header-upload" onclick="openUploadModal()" title="Dateien hochladen &amp; automatisch Felder füllen">📁 Dateien hochladen</button>
     <button class="btn-header-projects" onclick="openProjectsModal()">▤ Meine Exposés</button>
     <button class="btn-header-reset" onclick="openConfirmAll()">↺ Alles zurücksetzen</button>
   </div>
@@ -1236,10 +1371,170 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
 <!-- Startup Modal -->
 <div class="startup-overlay" id="startupOverlay">
   <div class="startup-modal">
-    <div class="startup-logo">ORANGE Immobilienagentur</div>
-    <div class="startup-tagline">Professionelle Exposés in Minuten</div>
-    <div class="startup-options" id="startupOptions">
-      <!-- buttons rendered by JS -->
+
+    <div class="sw-header">
+      <div class="sw-logo">ORANGE <span>Immobilienagentur</span></div>
+      <div class="sw-stepper">
+        <div class="sw-dot active" id="swDot1">1</div>
+        <div class="sw-line" id="swLine1"></div>
+        <div class="sw-dot" id="swDot2">2</div>
+        <div class="sw-line" id="swLine2"></div>
+        <div class="sw-dot" id="swDot3">3</div>
+      </div>
+    </div>
+
+    <!-- ── STEP 1: Datenbasis ── -->
+    <div class="sw-panel" id="swPanel1">
+      <div class="sw-step-label">Schritt 1 von 3</div>
+      <div class="sw-step-title">Womit möchten Sie starten?</div>
+      <div class="sw-step-desc">Laden Sie Testdaten oder beginnen Sie mit leeren Feldern.</div>
+
+      <div id="swResumeArea"></div>
+
+      <div class="sw-datasrc-grid">
+        <div class="sw-card selected" id="swCardEmpty" onclick="swSelectDataSrc('empty')">
+          <div class="sw-card-icon">○</div>
+          <div>
+            <div class="sw-card-title">Leere Felder</div>
+            <div class="sw-card-desc">Eigene Daten – alle Felder sind leer</div>
+          </div>
+        </div>
+        <div class="sw-card" id="swCardDemo" onclick="swSelectDataSrc('demo')">
+          <div class="sw-card-icon">★</div>
+          <div>
+            <div class="sw-card-title">Testdaten laden</div>
+            <div class="sw-card-desc">Beispielobjekt – sofort vorschaubereit</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sw-nav" style="justify-content:flex-end;border-top:none;margin-top:1.2rem;padding-top:0">
+        <button class="sw-next-btn" onclick="swGoStep(2)">Weiter →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: Exposé-Größe ── -->
+    <div class="sw-panel hidden" id="swPanel2">
+      <div class="sw-step-label">Schritt 2 von 3</div>
+      <div class="sw-step-title">Wie groß soll das Exposé sein?</div>
+      <div class="sw-step-desc">Der Umfang bestimmt, welche Inhaltsseiten erstellt werden.</div>
+
+      <div class="sw-size-grid">
+        <div class="sw-size-card" data-size="S" onclick="swSelectSize(this)">
+          <div class="sw-size-badge">S</div>
+          <div class="sw-size-name">Kompakt</div>
+          <div class="sw-size-pages">1 – 2 Seiten</div>
+          <div class="sw-size-desc">Mietwohnungen, einfache Objekte, schnelle Vermarktung</div>
+        </div>
+        <div class="sw-size-card selected" data-size="M" onclick="swSelectSize(this)">
+          <div class="sw-size-badge">M</div>
+          <div class="sw-size-name">Standard</div>
+          <div class="sw-size-pages">3 – 5 Seiten</div>
+          <div class="sw-size-desc">Kaufobjekte, Eigentumswohnungen, Häuser</div>
+        </div>
+        <div class="sw-size-card" data-size="L" onclick="swSelectSize(this)">
+          <div class="sw-size-badge">L</div>
+          <div class="sw-size-name">Premium</div>
+          <div class="sw-size-pages">6 – 10 Seiten</div>
+          <div class="sw-size-desc">Neubauprojekte, Kapitalanlagen, Exklusivobjekte</div>
+        </div>
+      </div>
+      <p class="sw-error" id="swErrSize">Bitte wählen Sie eine Größe aus.</p>
+
+      <div class="sw-nav">
+        <button class="sw-back-btn" onclick="swGoStep(1)">← Zurück</button>
+        <button class="sw-next-btn" onclick="swGoStep(3)">Weiter →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Eingabemethode ── -->
+    <div class="sw-panel hidden" id="swPanel3">
+      <div class="sw-step-label">Schritt 3 von 3</div>
+      <div class="sw-step-title">Wie möchten Sie die Daten eingeben?</div>
+      <div class="sw-step-desc">Mehrfachauswahl möglich – kombinieren Sie beliebig.</div>
+
+      <div class="sw-method-grid">
+        <div class="sw-method-card selected" data-method="manual" onclick="swToggleMethod(this)">
+          <div class="sw-method-icon">✏️</div>
+          <div class="sw-method-body">
+            <div class="sw-method-title">Selbst ausfüllen</div>
+            <div class="sw-method-desc">Alle Felder manuell eingeben – Schritt für Schritt durch das Formular</div>
+          </div>
+          <div class="sw-method-check">✓</div>
+        </div>
+        <div class="sw-method-card" data-method="voice" onclick="swToggleMethod(this)">
+          <div class="sw-method-icon">🎙</div>
+          <div class="sw-method-body">
+            <div class="sw-method-title">Einsprechen</div>
+            <div class="sw-method-desc">Gehen Sie durch die Immobilie und beschreiben Sie – die KI erstellt die Texte</div>
+          </div>
+          <div class="sw-method-check">✓</div>
+        </div>
+        <div class="sw-method-card" data-method="files" onclick="swToggleMethod(this)">
+          <div class="sw-method-icon">📁</div>
+          <div class="sw-method-body">
+            <div class="sw-method-title">Dateien hochladen</div>
+            <div class="sw-method-desc">Baubeschreibung, Notizen, altes Exposé oder ausgefülltes EXPOGEN-Formular</div>
+          </div>
+          <div class="sw-method-check">✓</div>
+        </div>
+      </div>
+
+      <div class="sw-file-zone" id="swFileZone"
+           onclick="document.getElementById('swFileInput').click()"
+           ondragover="swFileDragOver(event)" ondragleave="swFileDragLeave(event)" ondrop="swFileDrop(event)">
+        <div class="sw-file-zone-icon">📂</div>
+        <div class="sw-file-zone-text">Dateien hier ablegen oder klicken zum Auswählen</div>
+        <div class="sw-file-zone-sub">PDF · Word (.docx) · Bilder (JPG, PNG) · Text (.txt)</div>
+      </div>
+      <input type="file" id="swFileInput" multiple accept=".pdf,.docx,.doc,.txt,.jpg,.jpeg,.png" style="display:none" onchange="swHandleFileInput(this)">
+      <div class="sw-uploaded-files" id="swUploadedFiles"></div>
+
+      <p class="sw-error" id="swErrMethod">Bitte wählen Sie mindestens eine Methode.</p>
+
+      <div class="sw-nav">
+        <button class="sw-back-btn" onclick="swGoStep(2)">← Zurück</button>
+        <button class="sw-start-btn" onclick="swStart()">Exposé erstellen →</button>
+      </div>
+    </div>
+
+    <!-- Teaser: weitere Medien nach Dateneingabe -->
+    <div class="sw-teaser">
+      <div class="sw-teaser-kicker">Nach der Dateneingabe mit einem Klick verfügbar</div>
+      <div class="sw-teaser-items">
+        <div class="sw-teaser-item"><span class="sw-teaser-icon">🌐</span><span>Landing Page</span></div>
+        <div class="sw-teaser-item"><span class="sw-teaser-icon">📄</span><span>Flyer <span class="sw-teaser-soon">bald</span></span></div>
+        <div class="sw-teaser-item"><span class="sw-teaser-icon">🪧</span><span>Plakat <span class="sw-teaser-soon">bald</span></span></div>
+        <div class="sw-teaser-item"><span class="sw-teaser-icon">🏗️</span><span>Bauzaunbanner <span class="sw-teaser-soon">bald</span></span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Upload Modal (accessible from header anytime) -->
+<div class="startup-overlay" id="uploadOverlay" onclick="closeUploadOnBg(event)">
+  <div class="startup-modal" style="max-width:560px">
+    <div class="sw-header" style="margin-bottom:1.2rem">
+      <div class="sw-logo">📁 Dateien hochladen</div>
+      <button class="drawer-close-x" style="display:flex" onclick="closeUploadModal()">✕</button>
+    </div>
+    <div class="sw-step-title" style="font-size:1.2rem">Weitere Dokumente analysieren</div>
+    <div class="sw-step-desc">Laden Sie Baubeschreibung, Notizen, ein altes Exposé oder Bilder hoch – bestehende Felder bleiben erhalten, leere Felder werden ergänzt.</div>
+
+    <div class="sw-file-zone visible" id="upFileZone"
+         onclick="document.getElementById('upFileInput').click()"
+         ondragover="upFileDragOver(event)" ondragleave="upFileDragLeave(event)" ondrop="upFileDrop(event)">
+      <div class="sw-file-zone-icon">📂</div>
+      <div class="sw-file-zone-text">Dateien hier ablegen oder klicken zum Auswählen</div>
+      <div class="sw-file-zone-sub">PDF · Word (.docx) · Bilder (JPG, PNG) · Text (.txt)</div>
+    </div>
+    <input type="file" id="upFileInput" multiple accept=".pdf,.docx,.doc,.txt,.jpg,.jpeg,.png" style="display:none" onchange="upHandleFileInput(this)">
+    <div class="sw-uploaded-files" id="upUploadedFiles"></div>
+
+    <div class="sw-nav" style="display:flex;justify-content:space-between;margin-top:1.4rem;padding-top:1rem;border-top:1px solid var(--border)">
+      <button class="sw-back-btn" onclick="closeUploadModal()">Abbrechen</button>
+      <button class="sw-start-btn" id="upAnalyzeBtn" onclick="upStartAnalysis()" disabled>✦ Analysieren</button>
     </div>
   </div>
 </div>
@@ -1320,6 +1615,22 @@ input::placeholder,textarea::placeholder{color:rgba(120,130,160,.6)}
     <div class="voice-no-support" id="voiceNoSupport" style="display:none">
       ⚠️ Ihr Browser unterstützt keine Spracherkennung. Bitte Chrome oder Edge verwenden.
     </div>
+  </div>
+</div>
+
+<!-- File Analysis Modal -->
+<div class="fa-overlay" id="faOverlay">
+  <div class="fa-modal">
+    <div class="fa-icon">📂</div>
+    <div class="fa-title">Dateien werden verarbeitet</div>
+    <div class="fa-status" id="faStatus">Vorbereitung…</div>
+    <div class="fa-spinner"><span></span><span></span><span></span></div>
+    <div class="fa-log" id="faLog"></div>
+    <div class="fa-result" id="faResult">
+      <div class="fa-result-title">Ergebnis</div>
+      <div id="faResultRows"></div>
+    </div>
+    <button class="fa-close-btn" id="faCloseBtn" onclick="closeFaModal()">Weiter zum Formular →</button>
   </div>
 </div>
 
@@ -1409,36 +1720,35 @@ function init() {
   showStartupModal();
 }
 
+// ══════════════════════════════════════════════════════
+// STARTUP WIZARD STATE
+// ══════════════════════════════════════════════════════
+const swState = { dataSrc: 'empty', size: 'M', methods: new Set(['manual']), files: [] };
+let swCurrentStep = 1;
+
 function showStartupModal() {
   const projects = getAllProjects();
-  const opts = document.getElementById('startupOptions');
-  opts.innerHTML = '';
-
+  const resumeArea = document.getElementById('swResumeArea');
   if (projects.length > 0) {
     const latest = [...projects].sort((a,b) => new Date(b.savedAt) - new Date(a.savedAt))[0];
-    opts.innerHTML += `
-      <button class="btn-startup btn-startup-resume" onclick="startupResume()">
-        <span class="btn-startup-icon">↩</span>
-        <span class="btn-startup-text"><strong>Letztes Exposé fortsetzen</strong><span>${escHtml(latest.name)}</span></span>
-      </button>`;
+    let extraBtn = '';
     if (projects.length > 1) {
-      opts.innerHTML += `
-        <button class="btn-startup btn-startup-secondary" onclick="closeStartupModal();openProjectsModal()">
-          <span class="btn-startup-icon">▤</span>
-          <span class="btn-startup-text"><strong>Alle Exposés (${projects.length})</strong><span>Gespeicherte Exposés laden oder verwalten</span></span>
-        </button>`;
+      extraBtn = `<button class="sw-resume-btn" onclick="closeStartupModal();openProjectsModal()" style="margin-top:.5rem">
+        <span class="sw-resume-icon">▤</span>
+        <div class="sw-resume-text"><strong>Alle Exposés (${projects.length})</strong><span>Gespeicherte Exposés laden oder verwalten</span></div>
+      </button>`;
     }
+    resumeArea.innerHTML = `
+      <button class="sw-resume-btn" onclick="swResume()">
+        <span class="sw-resume-icon">↩</span>
+        <div class="sw-resume-text"><strong>Letztes Exposé fortsetzen</strong><span>${escHtml(latest.name)}</span></div>
+      </button>
+      ${extraBtn}
+      <div class="sw-divider"><span class="sw-divider-txt">oder neu starten</span></div>`;
+  } else {
+    resumeArea.innerHTML = '';
   }
-  opts.innerHTML += `
-    <button class="btn-startup btn-startup-primary" onclick="startupDemo()">
-      <span class="btn-startup-icon">★</span>
-      <span class="btn-startup-text"><strong>Mit Demodaten starten</strong><span>Beispielobjekt – sofort loslegen</span></span>
-    </button>
-    <button class="btn-startup btn-startup-secondary" onclick="startupEmpty()">
-      <span class="btn-startup-icon">○</span>
-      <span class="btn-startup-text"><strong>Leer starten</strong><span>Alle Felder leer – eigene Daten eingeben</span></span>
-    </button>`;
-
+  swGoStep(1, true);
   document.getElementById('startupOverlay').classList.add('open');
 }
 
@@ -1446,7 +1756,88 @@ function closeStartupModal() {
   document.getElementById('startupOverlay').classList.remove('open');
 }
 
-function startupResume() {
+function swGoStep(n, silent) {
+  ['swErrSize','swErrMethod'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show');
+  });
+  if (!silent && n > swCurrentStep) {
+    if (swCurrentStep === 2 && !swState.size) {
+      document.getElementById('swErrSize').classList.add('show'); return;
+    }
+    if (swCurrentStep === 3 && swState.methods.size === 0) {
+      document.getElementById('swErrMethod').classList.add('show'); return;
+    }
+  }
+  swCurrentStep = n;
+  [1,2,3].forEach(i => {
+    const p = document.getElementById('swPanel' + i);
+    if (p) p.classList.toggle('hidden', i !== n);
+  });
+  [1,2,3].forEach(i => {
+    const dot = document.getElementById('swDot' + i);
+    if (!dot) return;
+    dot.classList.toggle('active', i === n);
+    dot.classList.toggle('done', i < n);
+  });
+  [1,2].forEach(i => {
+    const line = document.getElementById('swLine' + i);
+    if (line) line.classList.toggle('done', i < n);
+  });
+}
+
+function swSelectDataSrc(src) {
+  swState.dataSrc = src;
+  document.getElementById('swCardEmpty').classList.toggle('selected', src === 'empty');
+  document.getElementById('swCardDemo').classList.toggle('selected', src === 'demo');
+}
+
+function swSelectSize(card) {
+  document.querySelectorAll('.sw-size-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  swState.size = card.dataset.size;
+  const errEl = document.getElementById('swErrSize');
+  if (errEl) errEl.classList.remove('show');
+}
+
+function swToggleMethod(card) {
+  const m = card.dataset.method;
+  if (swState.methods.has(m)) { swState.methods.delete(m); card.classList.remove('selected'); }
+  else { swState.methods.add(m); card.classList.add('selected'); }
+  const zone = document.getElementById('swFileZone');
+  if (zone) zone.classList.toggle('visible', swState.methods.has('files'));
+  const errEl = document.getElementById('swErrMethod');
+  if (errEl) errEl.classList.remove('show');
+}
+
+function swFileDragOver(e) { e.preventDefault(); document.getElementById('swFileZone').classList.add('dragover'); }
+function swFileDragLeave(e) { document.getElementById('swFileZone').classList.remove('dragover'); }
+function swFileDrop(e) { e.preventDefault(); document.getElementById('swFileZone').classList.remove('dragover'); swAddFiles([...e.dataTransfer.files]); }
+function swHandleFileInput(input) { swAddFiles([...input.files]); input.value = ''; }
+function swAddFiles(fileList) {
+  fileList.forEach(f => { if (!swState.files.find(x => x.name === f.name && x.size === f.size)) swState.files.push(f); });
+  swRenderFiles();
+}
+function swRemoveFile(idx) { swState.files.splice(idx, 1); swRenderFiles(); }
+function swFileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (ext === 'pdf') return '📄';
+  if (['doc','docx'].includes(ext)) return '📝';
+  if (['jpg','jpeg','png','gif','webp'].includes(ext)) return '🖼';
+  return '📎';
+}
+function swRenderFiles() {
+  const wrap = document.getElementById('swUploadedFiles');
+  if (!wrap) return;
+  wrap.innerHTML = swState.files.map((f,i) => `
+    <div class="sw-file-item">
+      <span class="sw-file-item-icon">${swFileIcon(f.name)}</span>
+      <span class="sw-file-item-name">${f.name}</span>
+      <button class="sw-file-item-del" onclick="swRemoveFile(${i})" title="Entfernen">✕</button>
+    </div>`).join('');
+}
+
+function swResume() {
   const projects = getAllProjects();
   if (projects.length === 0) { closeStartupModal(); return; }
   const latest = [...projects].sort((a,b) => new Date(b.savedAt) - new Date(a.savedAt))[0];
@@ -1454,16 +1845,427 @@ function startupResume() {
   loadProject(latest.id);
 }
 
-function startupDemo() {
+function swStart() {
+  if (swState.methods.size === 0) {
+    document.getElementById('swErrMethod').classList.add('show'); return;
+  }
   closeStartupModal();
-  loadDemo();
+
+  const size = swState.size || 'M';
+  const sizeCard = document.querySelector(`.groesse-card[data-size="${size}"]`);
+  if (sizeCard) {
+    document.querySelectorAll('.groesse-card').forEach(c => c.classList.remove('selected'));
+    sizeCard.classList.add('selected');
+  }
+  data.size = size;
+
+  if (swState.dataSrc === 'demo') {
+    loadDemo();
+    data.size = size;
+    const sc = document.querySelector(`.groesse-card[data-size="${size}"]`);
+    if (sc) { document.querySelectorAll('.groesse-card').forEach(c=>c.classList.remove('selected')); sc.classList.add('selected'); }
+    buildStepper();
+    const eligible = getActiveStepIds();
+    current = eligible[1] || eligible[0];
+    showStep(current); updateNav();
+  } else {
+    buildStepper();
+    const eligible = getActiveStepIds();
+    current = eligible[1] || eligible[0];
+    showStep(current); updateNav();
+  }
+
+  updateHeaderSizeSwitch();
+
+  if (swState.methods.has('files') && swState.files.length > 0) {
+    window.swPendingFiles = swState.files.slice();
+    setTimeout(() => swOpenFileAnalysis(), 300);
+  } else if (swState.methods.has('voice')) {
+    setTimeout(() => openVoiceModal(), 350);
+  }
 }
 
-function startupEmpty() {
-  closeStartupModal();
-  current = 1;
-  showStep(current);
+// ══════════════════════════════════════════════════════
+// UPLOAD MODAL – reuse file analysis from within main form
+// ══════════════════════════════════════════════════════
+const upState = { files: [] };
+
+function openUploadModal() {
+  upState.files = [];
+  upRenderFiles();
+  document.getElementById('uploadOverlay').classList.add('open');
+}
+function closeUploadModal() {
+  document.getElementById('uploadOverlay').classList.remove('open');
+}
+function closeUploadOnBg(e) {
+  if (e.target.id === 'uploadOverlay') closeUploadModal();
+}
+function upFileDragOver(e) { e.preventDefault(); document.getElementById('upFileZone').classList.add('dragover'); }
+function upFileDragLeave(e) { document.getElementById('upFileZone').classList.remove('dragover'); }
+function upFileDrop(e) {
+  e.preventDefault();
+  document.getElementById('upFileZone').classList.remove('dragover');
+  upAddFiles([...e.dataTransfer.files]);
+}
+function upHandleFileInput(input) { upAddFiles([...input.files]); input.value = ''; }
+function upAddFiles(fileList) {
+  fileList.forEach(f => {
+    if (!upState.files.find(x => x.name === f.name && x.size === f.size)) {
+      upState.files.push(f);
+    }
+  });
+  upRenderFiles();
+}
+function upRemoveFile(idx) { upState.files.splice(idx, 1); upRenderFiles(); }
+function upRenderFiles() {
+  const wrap = document.getElementById('upUploadedFiles');
+  if (!wrap) return;
+  wrap.innerHTML = upState.files.map((f,i) => `
+    <div class="sw-file-item">
+      <span class="sw-file-item-icon">${swFileIcon(f.name)}</span>
+      <span class="sw-file-item-name">${f.name}</span>
+      <button class="sw-file-item-del" onclick="upRemoveFile(${i})" title="Entfernen">✕</button>
+    </div>`).join('');
+  const btn = document.getElementById('upAnalyzeBtn');
+  if (btn) btn.disabled = upState.files.length === 0;
+}
+function upStartAnalysis() {
+  if (!upState.files.length) return;
+  collectStep(current);
+  window.swPendingFiles = upState.files.slice();
+  window._upMergeMode = true;
+  closeUploadModal();
+  setTimeout(() => swOpenFileAnalysis(), 200);
+}
+
+// ══════════════════════════════════════════════════════
+// HEADER SIZE SWITCH – change S/M/L anytime
+// ══════════════════════════════════════════════════════
+function switchSize(s) {
+  if (!['S','M','L'].includes(s) || data.size === s) return;
+  collectStep(current);
+  data.size = s;
+  document.querySelectorAll('.groesse-card').forEach(c => c.classList.toggle('selected', c.dataset.size === s));
+  buildStepper();
+  updateHeaderSizeSwitch();
+  saveToStorage();
+  const active = getActiveStepIds();
+  if (!active.includes(current)) {
+    current = active[0];
+    showStep(current);
+  }
   updateNav();
+}
+
+function updateHeaderSizeSwitch() {
+  document.querySelectorAll('.header-size-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.size === data.size);
+  });
+}
+
+// Legacy shims
+function startupResume() { swResume(); }
+function startupDemo()   { swState.dataSrc='demo';  swStart(); }
+function startupEmpty()  { swState.dataSrc='empty'; swStart(); }
+
+// ══════════════════════════════════════════════════════
+// FILE ANALYSIS – text extraction + AI parsing
+// ══════════════════════════════════════════════════════
+function openFaModal() {
+  document.getElementById('faStatus').textContent = 'Vorbereitung…';
+  document.getElementById('faLog').innerHTML = '';
+  document.getElementById('faLog').classList.remove('show');
+  document.getElementById('faResult').classList.remove('show');
+  document.getElementById('faResultRows').innerHTML = '';
+  document.getElementById('faCloseBtn').classList.remove('show');
+  const spinner = document.querySelector('.fa-spinner');
+  if (spinner) spinner.style.display = '';
+  document.getElementById('faOverlay').classList.add('open');
+}
+function closeFaModal() { document.getElementById('faOverlay').classList.remove('open'); window._upMergeMode = false; }
+function faSetStatus(txt) { const el = document.getElementById('faStatus'); if (el) el.textContent = txt; }
+function faLog(msg, type) {
+  const log = document.getElementById('faLog');
+  if (!log) return;
+  log.classList.add('show');
+  const icon = type === 'done' ? '✓' : type === 'err' ? '✕' : '·';
+  const item = document.createElement('div');
+  item.className = 'fa-log-item ' + (type || '');
+  item.innerHTML = `<span class="fa-log-icon">${icon}</span><span>${msg}</span>`;
+  log.appendChild(item);
+  log.scrollTop = log.scrollHeight;
+}
+
+function fileToArrayBuffer(file) {
+  return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = e => resolve(e.target.result); r.onerror = reject; r.readAsArrayBuffer(file); });
+}
+function fileToText(file) {
+  return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = e => resolve(e.target.result); r.onerror = reject; r.readAsText(file, 'UTF-8'); });
+}
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = e => resolve(e.target.result); r.onerror = reject; r.readAsDataURL(file); });
+}
+
+async function extractPdfText(file) {
+  const pdfjsLib = window.pdfjsLib;
+  if (!pdfjsLib) throw new Error('pdf.js nicht geladen – Internetverbindung prüfen');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  const buf = await fileToArrayBuffer(file);
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+
+  for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+    const page = await pdf.getPage(i);
+
+    // 1. Regular visible text (labels, headings, static content)
+    const content = await page.getTextContent();
+    const pageText = content.items.map(s => s.str).filter(s => s.trim()).join(' ');
+    if (pageText) text += pageText + '\n';
+
+    // 2. Filled form field values – critical for ausfüllbare PDF-Formulare
+    try {
+      const annotations = await page.getAnnotations();
+      const formFields = annotations
+        .filter(a => a.subtype === 'Widget' && a.fieldValue !== undefined && a.fieldValue !== '')
+        .map(a => {
+          const label = (a.alternativeText || a.fieldName || '').trim();
+          const value = Array.isArray(a.fieldValue)
+            ? a.fieldValue.join(', ')
+            : String(a.fieldValue).trim();
+          if (!value) return null;
+          return label ? `${label}: ${value}` : value;
+        })
+        .filter(Boolean);
+      if (formFields.length) text += formFields.join('\n') + '\n';
+    } catch(e) { /* annotations not available on this page */ }
+
+    text += '\n';
+  }
+  return text.trim();
+}
+
+async function extractDocxText(file) {
+  if (!window.mammoth) throw new Error('mammoth.js nicht geladen');
+  const buf = await fileToArrayBuffer(file);
+  const result = await window.mammoth.extractRawText({ arrayBuffer: buf });
+  return result.value.trim();
+}
+
+async function swOpenFileAnalysis() {
+  const files = window.swPendingFiles || [];
+  if (!files.length) return;
+
+  openFaModal();
+  faSetStatus('Dateien werden analysiert…');
+
+  const imageFiles = files.filter(f => f.type.startsWith('image/'));
+  const docFiles   = files.filter(f => !f.type.startsWith('image/'));
+  let imagesAdded = 0;
+  let textChunks  = [];
+
+  if (imageFiles.length) {
+    faSetStatus(`${imageFiles.length} Bild${imageFiles.length > 1 ? 'er werden' : ' wird'} eingefügt…`);
+    for (const f of imageFiles) {
+      try {
+        const dataUrl = await fileToDataURL(f);
+        photos.push({ src: dataUrl, caption: '' });
+        imagesAdded++;
+        faLog(`Bild eingefügt: ${f.name}`, 'done');
+      } catch(e) { faLog(`Bild fehlgeschlagen: ${f.name}`, 'err'); }
+    }
+    if (imagesAdded) renderPhotoGrid();
+  }
+
+  for (const f of docFiles) {
+    faSetStatus(`Text wird extrahiert: ${f.name}`);
+    let text = '';
+    const ext = f.name.split('.').pop().toLowerCase();
+    try {
+      if (ext === 'pdf') text = await extractPdfText(f);
+      else if (['doc','docx'].includes(ext)) text = await extractDocxText(f);
+      else if (ext === 'txt') text = await fileToText(f);
+      else { faLog(`Format nicht unterstützt: ${f.name}`, 'err'); continue; }
+      if (text && text.length > 10) {
+        textChunks.push(`=== ${f.name} ===\n${text}`);
+        faLog(`Text extrahiert: ${f.name} (${text.length} Zeichen)`, 'done');
+      } else {
+        faLog(`Kein lesbarer Text in: ${f.name} – ggf. gescanntes PDF?`, 'err');
+      }
+    } catch(e) { console.error('File extract error:', e); faLog(`Fehler bei ${f.name}: ${e.message}`, 'err'); }
+  }
+
+  if (textChunks.length) {
+    faSetStatus('KI analysiert den Inhalt…');
+    const combinedText = textChunks.join('\n\n').slice(0, 12000);
+    const systemPrompt = `Du bist ein Extraktions-Assistent für deutsche Immobilien-Exposés. Du bekommst ein Dokument (Fragebogen, Baubeschreibung, freier Text, altes Exposé) und MUSST alle Immobilien-Informationen in ein JSON-Objekt überführen.
+
+WICHTIGE REGELN:
+1. Du gibst IMMER ein valides JSON-Objekt zurück – kein Markdown, keine Erklärungen.
+2. Fülle JEDES Feld, für das du Informationen findest – sei großzügig, nicht konservativ.
+3. Paraphrasiere nicht und kürze nicht – übernimm längere Texte (Beschreibung, Lage, Ausstattung) vollständig und wörtlich aus dem Dokument.
+4. Für Adressen: setze Straße/Hausnummer, PLZ, Ort und ggf. Stadtteil zu EINEM String zusammen (z. B. "Nibelungenstraße 10, 93182 Duggendorf / Girnitz").
+5. Für type: genau einer von "Eigentumswohnung", "Haus", "Neubau-Projekt", "Gewerbe", "Grundstück", "Sonstiges". Im Zweifel leer lassen.
+6. Für size: "S" (nur Basisdaten), "M" (mit Beschreibungstexten), "L" (mit Einheiten/Investment).
+7. Arrays (highlights, ausstattungList, investHighlights) sind Listen kurzer Strings. Für Aufzählungen im Dokument → jedes Element ein Array-Eintrag.
+8. Nur Felder leer lassen, wenn im Dokument WIRKLICH nichts steht. Im Zweifel lieber einen Wert setzen.
+
+Erkennbare Fragebogen-Labels aus EXPOGEN-Kundenfragebogen:
+- "Objekttitel / Projektname" → titel  |  "Untertitel / Tagline" → untertitel  |  "Objekttyp" → type
+- "Baujahr / Fertigstellung" → baujahr  |  "Zustand" → zustand  |  "Verfügbarkeit / Bezugstermin" → verfuegbar
+- "Wohnfläche" → wohnflaeche  |  "Gesamtfläche" → gesamtflaeche  |  "Anzahl Zimmer" → zimmer  |  "Anzahl Wohneinheiten" → einheitenAnz
+- "Kaufpreis / Preis ab" → preis  |  "Hausgeld / Nebenkosten" → hausgeld  |  "Käuferprovision" → kaeuferp  |  "Weitere Kosten" → weitereKosten
+- "Objektbeschreibung" → beschreibung  |  "Lagebeschreibung" → lage  |  "Beschreibung der Stadt" → stadtbeschr  |  "Ausstattung (Fließtext)" → ausstattung
+- "Ausstattungsmerkmale (Liste)" → ausstattungList  |  "Highlights / Besondere Verkaufsargumente" → highlights  |  "Investment-Highlights" → investHighlights
+- "Energiestandard" → energiestandard  |  "Energieklasse" → energieklasse  |  "Energiekennwert" → energiekennwert  |  "Heizungsart" → heizung  |  "Heizungssystem" → heizungsart  |  "Energieausweistyp" → energieausweisTyp
+- "Denkmalschutz" → denkmal  |  "Investment-Beschreibung" → investment
+
+PFLICHT: Gib das JSON mit EXAKT diesen Keys zurück (auch wenn einzelne leer sind):
+type, size, titel, untertitel, adresse, preis, preisDetail, baujahr, zustand, verfuegbar, wohnflaeche, gesamtflaeche, zimmer, einheitenAnz, energiestandard, heizung, heizungsart, energieausweis, energieklasse, energiekennwert, energieausweisTyp, hausgeld, denkmal, kaeuferp, weitereKosten, beschreibung, highlights, lage, stadtbeschr, ausstattung, ausstattungList, investment, investHighlights.`;
+    const userMsg = `DOKUMENT-INHALT:\n---\n${combinedText}\n---\n\nExtrahiere jetzt ALLE Immobilien-Daten aus dem Dokument in das JSON-Objekt. Denk daran: vollständige Texte wörtlich übernehmen, Adresse zusammenbauen, Listen als Arrays, alle Felder ausfüllen, für die das Dokument Informationen liefert.`;
+
+    async function callLLM7(model) {
+      const res = await fetch('https://api.llm7.io/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer unused' },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userMsg }
+          ],
+          temperature: 0.2
+        })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const content = data?.choices?.[0]?.message?.content;
+      if (!content || !content.trim()) throw new Error('leere Antwort');
+      return content;
+    }
+
+    async function callPollinations(model) {
+      const res = await fetch('https://text.pollinations.ai/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userMsg }
+          ],
+          model,
+          seed: Math.floor(Math.random() * 99999)
+        })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const t = await res.text();
+      if (!t || !t.trim()) throw new Error('leere Antwort');
+      return t;
+    }
+
+    const hasSchemaKeys = o => o && typeof o === 'object' && !Array.isArray(o)
+      && (o.titel !== undefined || o.type !== undefined || o.adresse !== undefined
+       || o.beschreibung !== undefined || o.preis !== undefined);
+
+    function tryParseSchema(raw) {
+      if (!raw || !raw.trim()) return null;
+      const tryOne = (s) => {
+        let str = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+        const f = str.indexOf('{'), l = str.lastIndexOf('}');
+        if (f === -1 || l === -1 || l <= f) return null;
+        str = str.slice(f, l + 1);
+        try { return JSON.parse(str); } catch(_) { return null; }
+      };
+      let parsed = tryOne(raw);
+      if (hasSchemaKeys(parsed)) return parsed;
+      if (parsed && typeof parsed === 'object') {
+        const strings = [];
+        const seen = new Set();
+        (function walk(v) {
+          if (v === null || v === undefined) return;
+          if (typeof v === 'string') { strings.push(v); return; }
+          if (typeof v === 'object') {
+            if (seen.has(v)) return;
+            seen.add(v);
+            if (Array.isArray(v)) v.forEach(walk);
+            else Object.values(v).forEach(walk);
+          }
+        })(parsed);
+        for (const s of strings) {
+          const inner = tryOne(s);
+          if (hasSchemaKeys(inner)) return inner;
+        }
+      }
+      return null;
+    }
+
+    try {
+      const providers = [
+        { name: 'LLM7 (default)',         call: () => callLLM7('default') },
+        { name: 'LLM7 (gpt-oss-20b)',     call: () => callLLM7('gpt-oss-20b') },
+        { name: 'Pollinations (openai)',  call: () => callPollinations('openai') },
+        { name: 'Pollinations (deepseek)',call: () => callPollinations('deepseek') },
+      ];
+      let parsed = null;
+      let lastErr = null;
+      outer: for (const p of providers) {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            faSetStatus(`KI analysiert den Inhalt (${p.name}, Versuch ${attempt})…`);
+            const raw = await p.call();
+            console.log(`[Expogen] Raw (${p.name}):`, raw);
+            parsed = tryParseSchema(raw);
+            if (parsed) {
+              faLog(`Brauchbare Antwort erhalten (${p.name})`, 'done');
+              break outer;
+            }
+            faLog(`${p.name}: Antwort ohne Schema – Fallback`, 'err');
+          } catch(e) {
+            lastErr = e;
+            faLog(`${p.name} Versuch ${attempt}: ${e.message}`, 'err');
+          }
+          await new Promise(r => setTimeout(r, 500 * attempt));
+        }
+      }
+      if (!parsed) throw lastErr || new Error('Kein KI-Modell lieferte ein brauchbares Schema');
+
+      console.log('[Expogen] Parsed JSON:', parsed);
+      const nonEmptyKeys = Object.keys(parsed).filter(k => {
+        const v = parsed[k];
+        return v && (typeof v === 'string' ? v.length > 0 : Array.isArray(v) ? v.length > 0 : true);
+      });
+      faLog(`KI lieferte ${nonEmptyKeys.length} befüllte Felder: ${nonEmptyKeys.slice(0,8).join(', ')}${nonEmptyKeys.length>8?'…':''}`, 'done');
+
+      applyVoiceData(parsed);
+      faLog('KI-Analyse abgeschlossen', 'done');
+      const filledFields = Object.keys(parsed).filter(k => { const v = parsed[k]; return v && (typeof v === 'string' ? v.length > 0 : Array.isArray(v) ? v.length > 0 : false); });
+      const resultEl = document.getElementById('faResult');
+      const rowsEl   = document.getElementById('faResultRows');
+      if (resultEl && rowsEl) {
+        resultEl.classList.add('show');
+        const summary = [
+          imagesAdded ? `${imagesAdded} Bild${imagesAdded !== 1 ? 'er' : ''}` : null,
+          docFiles.length ? `${docFiles.length} Dokument${docFiles.length !== 1 ? 'e' : ''} analysiert` : null,
+          `${filledFields.length} Felder ausgefüllt`,
+        ].filter(Boolean);
+        rowsEl.innerHTML = summary.map(s => `<div class="fa-result-row"><span>·</span><span>${s}</span></div>`).join('');
+      }
+      faSetStatus('Fertig – alle verfügbaren Daten wurden übernommen.');
+    } catch(e) {
+      console.error('AI parse error:', e);
+      faLog('KI-Fehler: ' + e.message, 'err');
+      faSetStatus('KI-Analyse fehlgeschlagen – Bilder wurden trotzdem eingefügt.');
+    }
+  } else if (imagesAdded) {
+    faSetStatus(`${imagesAdded} Bild${imagesAdded !== 1 ? 'er wurden' : ' wurde'} ins Foto-Grid eingefügt.`);
+  } else {
+    faSetStatus('Keine verwertbaren Inhalte gefunden.');
+  }
+
+  const spinner = document.querySelector('.fa-spinner');
+  if (spinner) spinner.style.display = 'none';
+  const closeBtn = document.getElementById('faCloseBtn');
+  if (closeBtn) closeBtn.classList.add('show');
 }
 
 // ══════════════════════════════════════════════════════
@@ -1742,6 +2544,8 @@ function selectGroesse(card) {
   card.classList.add('selected');
   data.size = card.dataset.size;
   buildStepper(); clearErrors();
+  updateHeaderSizeSwitch();
+  saveToStorage();
 }
 
 function selectType(card) {
@@ -2346,6 +3150,7 @@ function loadFromStorage() {
       if(!data.kaeuferp){ const def=localStorage.getItem('expogen_default_provision'); if(def){ setVal('f-kaeuferp',def); data.kaeuferp=def; } }
     }
     if(s) current=parseInt(s)||1;
+    updateHeaderSizeSwitch();
   } catch(e){}
 }
 
@@ -2810,10 +3615,15 @@ async function processVoiceTranscript() {
 }
 
 function applyVoiceData(d) {
-  if (d.size && ['S','M','L'].includes(d.size)) data.size = d.size;
-  else data.size = 'L';
+  const merge = window._upMergeMode === true;
 
-  if (d.type) data.type = d.type;
+  if (!merge) {
+    if (d.size && ['S','M','L'].includes(d.size)) data.size = d.size;
+    else data.size = 'L';
+    if (d.type) data.type = d.type;
+  } else {
+    if (!data.type && d.type) data.type = d.type;
+  }
 
   const fields = ['titel','untertitel','adresse','preis','preisDetail',
     'baujahr','zustand','verfuegbar','wohnflaeche','gesamtflaeche',
@@ -2823,30 +3633,32 @@ function applyVoiceData(d) {
     'weitereKosten','beschreibung','lage','stadtbeschr','ausstattung','investment'];
 
   fields.forEach(key => {
-    if (d[key]) {
-      data[key] = d[key];
-      setVal('f-'+key, d[key]);
-    }
+    if (!d[key]) return;
+    if (merge && data[key]) return;
+    data[key] = d[key];
+    setVal('f-'+key, d[key]);
   });
 
-  if (Array.isArray(d.highlights) && d.highlights.length) {
+  if (Array.isArray(d.highlights) && d.highlights.length && !(merge && Array.isArray(data.highlights) && data.highlights.length)) {
     data.highlights = d.highlights;
     const list = document.getElementById('highlightList');
     if (list) { list.innerHTML = ''; d.highlights.forEach(v => addHighlight(v)); }
   }
-  if (Array.isArray(d.ausstattungList) && d.ausstattungList.length) {
+  if (Array.isArray(d.ausstattungList) && d.ausstattungList.length && !(merge && Array.isArray(data.ausstattungList) && data.ausstattungList.length)) {
     data.ausstattungList = d.ausstattungList;
     const list = document.getElementById('ausstattungList');
     if (list) { list.innerHTML = ''; d.ausstattungList.forEach(v => addAusstattung(v)); }
   }
-  if (Array.isArray(d.investHighlights) && d.investHighlights.length) {
+  if (Array.isArray(d.investHighlights) && d.investHighlights.length && !(merge && Array.isArray(data.investHighlights) && data.investHighlights.length)) {
     data.investHighlights = d.investHighlights;
     const list = document.getElementById('investList');
     if (list) { list.innerHTML = ''; d.investHighlights.forEach(v => addInvest(v)); }
   }
 
   saveToStorage();
-  navigateToStep(14);
+  updateHeaderSizeSwitch();
+  if (!merge) navigateToStep(14);
+  else showStep(current);
 }
 
 // ══════════════════════════════════════════════════════
